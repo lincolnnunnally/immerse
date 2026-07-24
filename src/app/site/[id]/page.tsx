@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSiteById } from "@/lib/mock-sites";
+import { extractFacilityId } from "@/lib/trips";
+import { AvailabilityPanel } from "@/components/AvailabilityPanel";
+import { SaveTripButton } from "@/components/SaveTripButton";
 
 export default async function SitePage({
   params,
@@ -11,7 +14,16 @@ export default async function SitePage({
   const site = getSiteById(id);
   if (!site) notFound();
 
-  const nights = 2; // default example
+  const facilityId = extractFacilityId(site.reservationUrl, site.id);
+
+  const typeLabel =
+    site.type === "dispersed"
+      ? "Dispersed / Free"
+      : site.type === "wma"
+      ? "WMA / Wildlife Area"
+      : site.type === "ohv"
+      ? "OHV / 4x4"
+      : "Developed Campground";
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -24,15 +36,29 @@ export default async function SitePage({
 
       <div className="mb-2">
         <span className="text-xs font-medium uppercase tracking-wide text-forest-500">
-          {site.type === "dispersed" ? "Dispersed / Free" : "Developed Campground"}
+          {typeLabel}
         </span>
       </div>
       <h1 className="text-3xl font-bold text-forest-900 mb-1">{site.name}</h1>
-      {site.agency && <p className="text-forest-600 mb-6">{site.agency}</p>}
+      {site.agency && <p className="text-forest-600 mb-4">{site.agency}</p>}
+
+      <div className="flex flex-wrap gap-3 mb-8">
+        <SaveTripButton site={site} />
+        {site.reservationUrl && (
+          <a
+            href={site.reservationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800 transition"
+          >
+            Open Recreation.gov →
+          </a>
+        )}
+      </div>
 
       <p className="text-lg text-forest-800 leading-relaxed mb-8">{site.description}</p>
 
-      {/* Clarity grid — the heart of Immerse */}
+      {/* Clarity grid */}
       <section className="bg-white rounded-2xl border border-forest-100 p-6 mb-8 shadow-sm">
         <h2 className="font-semibold text-forest-900 mb-4 text-lg">Everything you need to know</h2>
         <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
@@ -95,20 +121,10 @@ export default async function SitePage({
             </div>
           )}
         </dl>
-
-        {site.reservationUrl && (
-          <div className="mt-6 pt-5 border-t border-forest-100">
-            <a
-              href={site.reservationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 rounded-full bg-forest-700 text-white font-semibold hover:bg-forest-800 transition"
-            >
-              Reserve on Recreation.gov →
-            </a>
-          </div>
-        )}
       </section>
+
+      {/* Live availability */}
+      <AvailabilityPanel facilityId={facilityId} reservationUrl={site.reservationUrl} />
 
       {/* Must-sees */}
       <section className="mb-8">
@@ -123,7 +139,6 @@ export default async function SitePage({
         </ul>
       </section>
 
-      {/* Amenities */}
       {site.amenities.length > 0 && (
         <section className="mb-8">
           <h2 className="font-semibold text-forest-900 mb-3 text-lg">Amenities</h2>
@@ -146,7 +161,7 @@ export default async function SitePage({
         </section>
       )}
 
-      {/* Simple itinerary starter */}
+      {/* Sample itinerary */}
       <section className="bg-forest-50 rounded-2xl p-6 border border-forest-100">
         <h2 className="font-semibold text-forest-900 mb-1 text-lg">Sample 2-night immersion plan</h2>
         <p className="text-sm text-forest-600 mb-5">
@@ -187,10 +202,6 @@ export default async function SitePage({
             </ul>
           </div>
         </div>
-
-        <p className="mt-6 text-xs text-forest-500">
-          Full AI-assisted itinerary (weather, packing list, multi-stop) is on the roadmap.
-        </p>
       </section>
     </div>
   );
