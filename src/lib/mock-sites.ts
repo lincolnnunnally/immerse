@@ -1,16 +1,21 @@
 import { CampSite } from "./types";
 
 /**
- * Curated starter data focused on Chattahoochee-Oconee National Forest
- * and nearby options accessible from the Conyers / Stockbridge / Vidalia area.
- * Drive times approximate from metro Atlanta / Conyers.
+ * Curated Georgia-focused data so the app is useful immediately.
+ * Drive times approximate from metro Atlanta / Conyers area.
+ *
+ * When RIDB_API_KEY is present, the search API pulls live federal facilities
+ * and these curated entries act as enrichment + dispersed/WMA coverage
+ * that RIDB does not fully cover.
  */
 export const mockSites: CampSite[] = [
+  // ─── Developed National Forest ───────────────────────────────────────
   {
     id: "desoto-falls",
     name: "Desoto Falls Recreation Area",
     type: "developed",
     agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
     lat: 34.712,
     lng: -83.915,
     elevation: 2200,
@@ -29,34 +34,15 @@ export const mockSites: CampSite[] = [
     description:
       "Popular developed campground with easy access to a beautiful double waterfall. Great first trip into the mountains — short hike to the falls right from the area.",
     notes: "Fills quickly on weekends. Book early or aim for mid-week.",
-  },
-  {
-    id: "ball-field-dispersed",
-    name: "Ball Field Dispersed Camping Area",
-    type: "dispersed",
-    agency: "USFS — Chattahoochee-Oconee NF (Conasauga RD)",
-    lat: 34.8609,
-    lng: -84.6362,
-    elevation: 3200,
-    driveTimeMinutes: 150,
-    hikeInMiles: 0,
-    hikeInElevationGain: 0,
-    reservationRequired: false,
-    passRequired: "None",
-    parkingFee: "Free (nearby Lake Conasauga day-use $5 if using those facilities)",
-    campingFee: "Free",
-    maxStayDays: 14,
-    amenities: ["Fire rings (established)", "Open field", "Trailheads on site"],
-    mustSees: ["Emery Creek Trail", "Tearbritches Trail into Cohutta Wilderness", "Lake Conasauga (1 mile)", "Stargazing"],
-    description:
-      "Large open grassy field at the base of Bald Mountain. True dispersed feel with established fire rings. Excellent access to Cohutta Wilderness trails. High clearance recommended on the approach road in wet conditions.",
-    notes: "No amenities. Pack in / pack out. Great for groups that want space and solitude.",
+    activities: ["Camping", "Hiking", "Waterfall viewing"],
+    dataSource: "curated",
   },
   {
     id: "tate-branch",
     name: "Tate Branch Campground",
     type: "developed",
     agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
     lat: 34.85,
     lng: -83.55,
     elevation: 2400,
@@ -74,12 +60,15 @@ export const mockSites: CampSite[] = [
     mustSees: ["Tallulah River confluence", "Quiet mountain stream", "Nearby fishing"],
     description:
       "Quiet 17-site campground at the junction of Tallulah River and Tate Branch. Includes walk-in tent sites for a more rustic feel while still having basic facilities.",
+    activities: ["Camping", "Fishing", "Hiking"],
+    dataSource: "curated",
   },
   {
     id: "upper-chattahoochee",
     name: "Upper Chattahoochee River Campground",
     type: "developed",
     agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
     lat: 34.78,
     lng: -83.73,
     elevation: 2800,
@@ -97,12 +86,15 @@ export const mockSites: CampSite[] = [
     mustSees: ["Horse Trough Falls (short trail from campground)", "Headwaters of the Chattahoochee", "Scenic FS road approach"],
     description:
       "19-site developed campground near the headwaters of the Chattahoochee. Short walking trail to Horse Trough Falls right from the back of the campground. Beautiful mountain approach.",
+    activities: ["Camping", "Hiking", "Waterfall viewing"],
+    dataSource: "curated",
   },
   {
     id: "andrews-cove",
     name: "Andrews Cove Campground",
     type: "developed",
     agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
     lat: 34.75,
     lng: -83.75,
     elevation: 2100,
@@ -120,12 +112,15 @@ export const mockSites: CampSite[] = [
     mustSees: ["Cool mountain stream", "Close to Helen, GA", "Easy access from Unicoi Gap area"],
     description:
       "Peaceful streamside campground only about 15 minutes from the alpine village of Helen. Good balance of nature immersion and convenience.",
+    activities: ["Camping", "Hiking"],
+    dataSource: "curated",
   },
   {
     id: "lake-russell",
     name: "Lake Russell Recreation Area Campground",
     type: "developed",
     agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
     lat: 34.45,
     lng: -83.35,
     elevation: 1100,
@@ -143,12 +138,69 @@ export const mockSites: CampSite[] = [
     mustSees: ["Lake Russell", "Swimming / fishing", "Boat ramp nearby"],
     description:
       "42-site campground on Lake Russell with both tent and RV options. Reservation only. Good for families who want water access without a long drive into the high mountains.",
+    activities: ["Camping", "Fishing", "Boating", "Swimming"],
+    dataSource: "curated",
+  },
+  {
+    id: "frank-gross",
+    name: "Frank Gross Recreation Area",
+    type: "developed",
+    agency: "USFS — Chattahoochee-Oconee NF (Ed Jenkins NRA)",
+    landManager: "USFS",
+    lat: 34.65,
+    lng: -84.15,
+    elevation: 2300,
+    driveTimeMinutes: 115,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: true,
+    reservationUrl: "https://www.recreation.gov",
+    bookingWindow: "6 months (April–Oct typically)",
+    passRequired: "None for camping",
+    parkingFee: "Included",
+    campingFee: "$8 / night",
+    maxStayDays: 14,
+    amenities: ["Picnic tables", "Fire rings", "Vault toilets", "Creek access"],
+    mustSees: ["Rock Creek", "Quiet mountain setting", "Fall color"],
+    description:
+      "Smaller developed campground on Rock Creek in the Ed Jenkins National Recreation Area. Affordable and peaceful — good mid-week escape.",
+    activities: ["Camping", "Fishing", "Hiking"],
+    dataSource: "curated",
+  },
+
+  // ─── Dispersed / Free National Forest ────────────────────────────────
+  {
+    id: "ball-field-dispersed",
+    name: "Ball Field Dispersed Camping Area",
+    type: "dispersed",
+    agency: "USFS — Chattahoochee-Oconee NF (Conasauga RD)",
+    landManager: "USFS",
+    lat: 34.8609,
+    lng: -84.6362,
+    elevation: 3200,
+    driveTimeMinutes: 150,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: false,
+    passRequired: "None",
+    parkingFee: "Free (nearby Lake Conasauga day-use $5 if using those facilities)",
+    campingFee: "Free",
+    maxStayDays: 14,
+    amenities: ["Fire rings (established)", "Open field", "Trailheads on site"],
+    mustSees: ["Emery Creek Trail", "Tearbritches Trail into Cohutta Wilderness", "Lake Conasauga (1 mile)", "Stargazing"],
+    description:
+      "Large open grassy field at the base of Bald Mountain. True dispersed feel with established fire rings. Excellent access to Cohutta Wilderness trails. High clearance recommended on the approach road in wet conditions.",
+    notes: "No amenities. Pack in / pack out. Great for groups that want space and solitude.",
+    activities: ["Camping", "Hiking", "Wilderness access"],
+    ohvFriendly: false,
+    dataSource: "curated",
   },
   {
     id: "jones-creek-dispersed",
     name: "Jones Creek Dispersed",
     type: "dispersed",
     agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
     lat: 34.7,
     lng: -83.9,
     elevation: 1800,
@@ -165,9 +217,150 @@ export const mockSites: CampSite[] = [
     description:
       "Riverside dispersed sites accessible via a narrow dirt road. More secluded feel. Good for smaller groups and those comfortable with primitive conditions.",
     notes: "Drive the road carefully. Do not park exactly where generic maps sometimes point.",
+    activities: ["Camping", "Fishing"],
+    dataSource: "curated",
+  },
+  {
+    id: "hickey-gap",
+    name: "Hickey Gap Campground (primitive)",
+    type: "dispersed",
+    agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
+    lat: 34.82,
+    lng: -84.55,
+    elevation: 2800,
+    driveTimeMinutes: 145,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: false,
+    passRequired: "None",
+    parkingFee: "Free",
+    campingFee: "Free / low fee if marked",
+    maxStayDays: 14,
+    amenities: ["Creek-side sites", "Small number of spots"],
+    mustSees: ["Mills Creek", "Quiet north Georgia mountains"],
+    description:
+      "Small primitive / dispersed-style sites along Mills Creek. Often quieter alternative near the Ball Field / Lake Conasauga corridor.",
+    activities: ["Camping", "Fishing"],
+    dataSource: "curated",
+  },
+
+  // ─── Georgia Wildlife Management Areas (WMA) ─────────────────────────
+  {
+    id: "ocmulgee-flats-wma",
+    name: "Ocmulgee Flats Hunt Camp (Oconee NF / WMA area)",
+    type: "wma",
+    agency: "USFS / Georgia DNR influence",
+    landManager: "USFS",
+    lat: 33.18,
+    lng: -83.82,
+    elevation: 450,
+    driveTimeMinutes: 75,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: false,
+    passRequired: "None for camping (hunting seasons have additional rules)",
+    parkingFee: "Free",
+    campingFee: "Free",
+    maxStayDays: 14,
+    amenities: ["Primitive sites", "Highlines for horses in some spots"],
+    mustSees: ["Ocmulgee River access", "Quiet Piedmont forest"],
+    description:
+      "Primitive dispersed-style camping in the Oconee portion of the national forest / hunt camp area. Closer to the Atlanta and middle-Georgia side — good for a quicker escape.",
+    notes: "Follow all WMA / forest rules. Pack out everything. Check hunting seasons before going.",
+    activities: ["Camping", "Hunting (seasonal)", "Hiking", "Fishing"],
+    dataSource: "curated",
+  },
+  {
+    id: "crockford-pigeon-wma",
+    name: "Crockford-Pigeon Mountain WMA (Blue Hole area)",
+    type: "wma",
+    agency: "Georgia DNR",
+    landManager: "State DNR / WMA",
+    lat: 34.72,
+    lng: -85.38,
+    elevation: 1400,
+    driveTimeMinutes: 130,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: false,
+    passRequired: "Georgia WMA license / land pass may be required — check current DNR rules",
+    parkingFee: "Check current regulations",
+    campingFee: "Usually free with proper pass",
+    maxStayDays: 14,
+    amenities: ["Primitive / designated spots", "Trail access"],
+    mustSees: ["Pigeon Mountain", "Rock formations", "Hiking & caving nearby"],
+    description:
+      "Wildlife Management Area on the northwest side of Georgia with primitive camping opportunities. Different feel from national forest — more open and rugged in places.",
+    notes: "Always verify current Georgia DNR WMA regulations and any required licenses before camping.",
+    activities: ["Camping", "Hiking", "Hunting (seasonal)", "Wildlife viewing"],
+    dataSource: "curated",
+  },
+  {
+    id: "pine-log-wma",
+    name: "Pine Log Mountain WMA",
+    type: "wma",
+    agency: "Georgia DNR",
+    landManager: "State DNR / WMA",
+    lat: 34.28,
+    lng: -84.65,
+    elevation: 1200,
+    driveTimeMinutes: 70,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: false,
+    passRequired: "Check Georgia DNR WMA requirements",
+    parkingFee: "Varies",
+    campingFee: "Usually free with proper credentials",
+    maxStayDays: 14,
+    amenities: ["Primitive camping", "Trail system"],
+    mustSees: ["Pine Log Mountain", "23+ miles of trails", "Closer drive from Atlanta"],
+    description:
+      "One of the more accessible WMAs north of Atlanta. Trails for hiking and mountain biking plus seasonal hunting. Primitive camping available under DNR rules.",
+    notes: "Confirm current camping and pass rules on the Georgia DNR site before you go.",
+    activities: ["Camping", "Hiking", "Mountain biking", "Hunting (seasonal)"],
+    dataSource: "curated",
+  },
+
+  // ─── OHV / 4x4 oriented (staging + nearby camping) ───────────────────
+  {
+    id: "chattahoochee-ohv",
+    name: "Chattahoochee OHV Trails & Staging (general area)",
+    type: "ohv",
+    agency: "USFS — Chattahoochee-Oconee NF",
+    landManager: "USFS",
+    lat: 34.7,
+    lng: -84.0,
+    elevation: 2000,
+    driveTimeMinutes: 110,
+    hikeInMiles: 0,
+    hikeInElevationGain: 0,
+    reservationRequired: false,
+    passRequired: "America the Beautiful or local day-use may apply at some trailheads; check current FS orders",
+    parkingFee: "Varies by trailhead / staging area",
+    campingFee: "Dispersed camping often allowed nearby under standard 14-day rules",
+    maxStayDays: 14,
+    amenities: ["Staging areas", "Designated OHV trails", "Nearby dispersed camping"],
+    mustSees: ["Designated 4x4 / OHV routes", "Forest service road network", "Combine with dispersed camping"],
+    description:
+      "Placeholder entry for OHV / 4x4 opportunities in the Chattahoochee National Forest. Many forest roads and designated trails exist; always consult the current Motor Vehicle Use Map (MVUM) for the district before riding. Dispersed camping is frequently possible near staging areas under normal forest rules.",
+    notes:
+      "OHV use is highly regulated. Download the official USFS MVUM for the ranger district. Stay on designated routes only. This entry will be expanded with specific trail systems and staging pads once we pull richer RIDB + USFS data.",
+    activities: ["OHV / 4x4", "Dispersed camping", "Scenic driving"],
+    ohvFriendly: true,
+    dataSource: "curated",
   },
 ];
 
 export function getSiteById(id: string): CampSite | undefined {
   return mockSites.find((s) => s.id === id);
+}
+
+/** Quick helpers for filtering */
+export function getSitesByType(type: CampSite["type"]) {
+  return mockSites.filter((s) => s.type === type);
+}
+
+export function getOhvSites() {
+  return mockSites.filter((s) => s.ohvFriendly || s.type === "ohv");
 }
