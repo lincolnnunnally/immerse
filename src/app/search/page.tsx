@@ -1,6 +1,25 @@
 import Link from "next/link";
-import { mockSites } from "@/lib/mock-sites";
 import { CampSite } from "@/lib/types";
+
+async function fetchSites(): Promise<{ sites: CampSite[]; source: string; message?: string }> {
+  // Server-side fetch to our own API route
+  const base = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  try {
+    // Default: Georgia focus
+    const res = await fetch(
+      `${base}/api/search?state=GA&radius=100&limit=40`,
+      { next: { revalidate: 1800 } }
+    );
+    if (!res.ok) throw new Error("Search API error");
+    return res.json();
+  } catch {
+    const { mockSites } = await import("@/lib/mock-sites");
+    return { sites: mockSites, source: "mock", message: "Could not reach search API" };
+  }
+}
 
 function SiteCard({ site }: { site: CampSite }) {
   const typeLabel =
@@ -38,7 +57,6 @@ function SiteCard({ site }: { site: CampSite }) {
           <p className="text-xs text-forest-500 mb-3">{site.agency}</p>
         )}
 
-        {/* Key facts — the anti-guessing row */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
           {site.driveTimeMinutes != null && (
             <div>
@@ -52,7 +70,7 @@ function SiteCard({ site }: { site: CampSite }) {
             <span className="text-forest-500">Hike-in</span>
             <p className="font-medium text-forest-800">
               {site.hikeInMiles === 0 || site.hikeInMiles == null
-                ? "Drive-up"
+                ? "Drive-up / TBD"
                 : `${site.hikeInMiles} mi`}
               {site.hikeInElevationGain ? ` (+${site.hikeInElevationGain} ft)` : ""}
             </p>
@@ -73,16 +91,18 @@ function SiteCard({ site }: { site: CampSite }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {site.mustSees.slice(0, 3).map((item) => (
-            <span
-              key={item}
-              className="text-xs bg-forest-50 text-forest-700 px-2 py-0.5 rounded-full"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
+        {site.mustSees && site.mustSees.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {site.mustSees.slice(0, 3).map((item) => (
+              <span
+                key={item}
+                className="text-xs bg-forest-50 text-forest-700 px-2 py-0.5 rounded-full"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
 
         <p className="text-sm text-forest-600 line-clamp-2">{site.description}</p>
       </div>
@@ -90,41 +110,50 @@ function SiteCard({ site }: { site: CampSite }) {
   );
 }
 
-export default function SearchPage() {
+export default async function SearchPage() {
+  const { sites, source, message } = await fetchSites();
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-forest-900 mb-2">Find a place to immerse</h1>
         <p className="text-forest-600">
-          Starting with Chattahoochee-Oconee National Forest & nearby Georgia options.
-          Live federal data and more states coming soon.
+          {source === "ridb"
+            ? "Live federal data via RIDB · Georgia focus"
+            : "Curated starter data · add RIDB_API_KEY for live federal results"}
         </p>
+        {message && (
+          <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 inline-block">
+            {message}
+          </p>
+        )}
       </div>
 
-      {/* Simple filters placeholder */}
       <div className="flex flex-wrap gap-3 mb-8">
-        <button className="px-4 py-2 rounded-full bg-forest-700 text-white text-sm font-medium">
-          All
-        </button>
-        <button className="px-4 py-2 rounded-full bg-white border border-forest-200 text-forest-700 text-sm font-medium hover:border-forest-400">
+        <span className="px-4 py-2 rounded-full bg-forest-700 text-white text-sm font-medium">
+          All ({sites.length})
+        </span>
+        <span className="px-4 py-2 rounded-full bg-white border border-forest-200 text-forest-700 text-sm font-medium">
           Developed
-        </button>
-        <button className="px-4 py-2 rounded-full bg-white border border-forest-200 text-forest-700 text-sm font-medium hover:border-forest-400">
+        </span>
+        <span className="px-4 py-2 rounded-full bg-white border border-forest-200 text-forest-700 text-sm font-medium">
           Dispersed / Free
-        </button>
-        <button className="px-4 py-2 rounded-full bg-white border border-forest-200 text-forest-700 text-sm font-medium hover:border-forest-400">
-          Short drive (< 2h)
-        </button>
+        </span>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        {mockSites.map((site) => (
-          <SiteCard key={site.id} site={site} />
-        ))}
-      </div>
+      {sites.length === 0 ? (
+        <p className="text-forest-600">No sites found. Try adjusting filters or adding an RIDB key.</p>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-5">
+          {sites.map((site) => (
+            <SiteCard key={site.id} site={site} />
+          ))}
+        </div>
+      )}
 
       <p className="mt-12 text-center text-sm text-forest-500">
-        These are curated starter sites. Full RIDB-powered search with live availability is next.
+        Data source: {source === "ridb" ? "Recreation Information Database (RIDB)" : "Curated mock set"}.
+        Availability calendars and pass enrichment coming next.
       </p>
     </div>
   );
