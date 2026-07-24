@@ -1,27 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchFacilities, mapFacilityToCampSite } from "@/lib/ridb";
 import { mockSites } from "@/lib/mock-sites";
+import { CampSite } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const lat = searchParams.get("lat");
   const lng = searchParams.get("lng");
-  const state = searchParams.get("state") || "GA";
-  const radius = Number(searchParams.get("radius") || 75);
+  const state = (searchParams.get("state") || "GA").toUpperCase();
+  const radius = Number(searchParams.get("radius") || 100);
   const query = searchParams.get("q") || undefined;
-  const limit = Number(searchParams.get("limit") || 40);
+  const limit = Number(searchParams.get("limit") || 50);
+  // activity: camping | ohv | all
+  const activityFilter = (searchParams.get("activity") || "camping").toLowerCase();
 
   // Prefer live RIDB when key is present
   if (process.env.RIDB_API_KEY) {
     try {
+      // RIDB activity IDs (common ones):
+      // 9 = Camping, others exist for OHV, hiking, etc. We start with camping.
+      // When activity=ohv we can broaden or drop the filter and post-filter later.
+      const activityParam = activityFilter === "ohv" ? undefined : "9";
+
       const params: Parameters<typeof searchFacilities>[0] = {
         state,
         radius,
         limit,
         query,
-        // activity filter for camping – RIDB activity IDs; 9 is commonly camping
-        activity: "9",
+        activity: activityParam,
       };
 
       if (lat && lng) {
@@ -31,42 +38,92 @@ export async function GET(req: NextRequest) {
 
       const { facilities, total } = await searchFacilities(params);
 
-      // Keep only facilities that look like camping / recreation sites with coords
-      const sites = facilities
+      let sites: CampSite[] = facilities
         .filter((f) => f.FacilityLatitude && f.FacilityLongitude)
-        .map(mapFacilityToCampSite);
+        .map((f) => {
+          const mapped = mapFacilityToCampSite(f);
+          mapped.dataSource = "ridb";
+          mapped.landManager = inferLandManager(f);
+          return mapped;
+        });
+
+      // For Georgia, merge in curated dispersed / WMA / OHV entries that RIDB under-represents
+      if (state === "GA") {
+        const curatedExtra = mockSites.filter(
+          (s) => s.type === "dispersed" || s.type === "wma" || s.type === "ohv"
+        );
+        // Avoid duplicates by rough name match
+        const existingNames = new Set(sites.map((s) => s.name.toLowerCase()));
+        curatedExtra.forEach((c) => {
+          if (!existingNames.has(c.name.toLowerCase())) {
+            sites.push(c);
+          }
+        });
+      }
+
+      if (activityFilter === "ohv") {
+        sites = sites.filter(
+          (s) =>
+            s.ohvFriendly ||
+            s.type === "ohv" ||
+            (s.activities || []).some((a) => a.toLowerCase().includes("ohv") || a.toLowerCase().includes("4x4"))
+        );
+      }
 
       return NextResponse.json({
         source: "ridb",
+        state,
         total,
         count: sites.length,
         sites,
       });
     } catch (err) {
       console.error("RIDB search failed, falling back to mock:", err);
-      // fall through to mock
+      // fall through
     }
   }
 
-  // Fallback: curated Georgia set so the app still works without a key
-  let sites = mockSites;
+  // Fallback / no-key path: curated Georgia set
+  let sites = state === "GA" ? [...mockSites] : [];
+
   if (query) {
     const q = query.toLowerCase();
     sites = sites.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
-        s.mustSees.some((m) => m.toLowerCase().includes(q))
+        (s.mustSees || []).some((m) => m.toLowerCase().includes(q)) ||
+        (s.activities || []).some((a) => a.toLowerCase().includes(q))
     );
+  }
+
+  if (activityFilter === "ohv") {
+    sites = sites.filter((s) => s.ohvFriendly || s.type === "ohv");
+  } else if (activityFilter === "dispersed") {
+    sites = sites.filter((s) => s.type === "dispersed" || s.type === "wma");
   }
 
   return NextResponse.json({
     source: "mock",
+    state,
     total: sites.length,
     count: sites.length,
     sites,
-    message: process.env.RIDB_API_KEY
-      ? "RIDB call failed – showing curated data"
-      : "No RIDB_API_KEY set – showing curated Georgia starter data. Add a free key from ridb.recreation.gov",
+    message:
+      process.env.RIDB_API_KEY
+        ? "RIDB call failed – showing curated data"
+        : state === "GA"
+        ? "No RIDB_API_KEY yet – showing curated Georgia data (NF + dispersed + WMAs + OHV placeholder). Drop the key in .env.local and restart to unlock live federal results."
+        : `No RIDB_API_KEY and no curated set for ${state} yet. Add the free key from ridb.recreation.gov to search federal lands nationwide.`,
   });
+}
+
+function inferLandManager(f: { FacilityTypeDescription?: string; [key: string]: unknown }): CampSite["landManager"] {
+  const org = String((f as any).OrgName || (f as any).OrganizationName || "").toLowerCase();
+  if (org.includes("forest") || org.includes("usfs")) return "USFS";
+  if (org.includes("national park") || org.includes("nps")) return "NPS";
+  if (org.includes("blm") || org.includes("land management")) return "BLM";
+  if (org.includes("corps") || org.includes("usace")) return "USACE";
+  if (org.includes("fish") || org.includes("wildlife") || org.includes("fws")) return "FWS";
+  return "Other";
 }
