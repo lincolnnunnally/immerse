@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     "dispersed camping",
     "recreation.gov alternative",
     "trip planner",
+    "private nature stay",
   ],
 };
 
@@ -31,12 +32,15 @@ export default function RootLayout({
                 Immerse
               </span>
             </a>
-            <nav className="flex items-center gap-6 text-sm font-medium text-forest-700">
+            <nav className="flex items-center gap-5 text-sm font-medium text-forest-700">
               <a href="/search" className="hover:text-forest-500 transition">
                 Search
               </a>
               <a href="/trips" className="hover:text-forest-500 transition">
                 My Trips
+              </a>
+              <a href="/host" className="hover:text-forest-500 transition">
+                Host
               </a>
             </nav>
           </div>
