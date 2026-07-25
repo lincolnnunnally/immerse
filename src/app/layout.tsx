@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthNav } from "@/components/AuthNav";
 
 export const metadata: Metadata = {
   title: "Immerse — Find & Plan Nature Camping Trips",
@@ -45,6 +46,7 @@ export default function RootLayout({
               <a href="/trust" className="hover:text-forest-500 transition">
                 Trust
               </a>
+              <AuthNav />
             </nav>
           </div>
         </header>

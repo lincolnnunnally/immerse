@@ -2,20 +2,25 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { loadTrips, removeTrip, SavedTrip } from "@/lib/trips";
+import { loadTrips, removeTrip, currentUserId, SavedTrip } from "@/lib/trips";
 
 export default function TripsPage() {
   const [trips, setTrips] = useState<SavedTrip[]>([]);
   const [ready, setReady] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    setTrips(loadTrips());
-    setReady(true);
+    (async () => {
+      const uid = await currentUserId();
+      setSignedIn(Boolean(uid));
+      if (uid) setTrips(await loadTrips());
+      setReady(true);
+    })();
   }, []);
 
-  function handleRemove(siteId: string) {
-    removeTrip(siteId);
-    setTrips(loadTrips());
+  async function handleRemove(siteId: string) {
+    await removeTrip(siteId);
+    setTrips((prev) => prev.filter((t) => t.siteId !== siteId));
   }
 
   if (!ready) {
@@ -26,13 +31,30 @@ export default function TripsPage() {
     );
   }
 
+  if (!signedIn) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-3xl font-bold text-forest-900 mb-4">My Trips</h1>
+        <p className="text-forest-600 mb-8 max-w-md mx-auto">
+          Sign in to save places and keep your trips synced across every device.
+        </p>
+        <Link
+          href="/account?next=/trips"
+          className="inline-flex px-6 py-3 rounded-full bg-forest-700 text-white font-semibold hover:bg-forest-800 transition"
+        >
+          Sign in to start planning
+        </Link>
+      </div>
+    );
+  }
+
   if (trips.length === 0) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <h1 className="text-3xl font-bold text-forest-900 mb-4">My Trips</h1>
         <p className="text-forest-600 mb-8 max-w-md mx-auto">
-          Nothing saved yet. Open a site and tap <strong>Save to My Trips</strong> — it stays on this
-          device until you clear it.
+          Nothing saved yet. Open a site and tap <strong>Save to My Trips</strong> — it syncs to your
+          account.
         </p>
         <Link
           href="/search"
@@ -50,13 +72,10 @@ export default function TripsPage() {
         <div>
           <h1 className="text-3xl font-bold text-forest-900">My Trips</h1>
           <p className="text-sm text-forest-600 mt-1">
-            {trips.length} saved · stored on this device
+            {trips.length} saved · synced to your account
           </p>
         </div>
-        <Link
-          href="/search"
-          className="text-sm font-medium text-forest-700 hover:underline"
-        >
+        <Link href="/search" className="text-sm font-medium text-forest-700 hover:underline">
           + Add more
         </Link>
       </div>
@@ -101,9 +120,7 @@ export default function TripsPage() {
             </div>
 
             {trip.passRequired && (
-              <p className="mt-2 text-xs text-forest-600">
-                Pass: {trip.passRequired}
-              </p>
+              <p className="mt-2 text-xs text-forest-600">Pass: {trip.passRequired}</p>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2">

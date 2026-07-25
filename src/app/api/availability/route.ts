@@ -4,11 +4,20 @@ import { getCampgroundAvailabilityMonth } from "@/lib/ridb";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const facilityId = searchParams.get("facilityId");
-  const year = Number(searchParams.get("year") || new Date().getFullYear());
-  const month = Number(searchParams.get("month") || new Date().getMonth() + 1);
+  const now = new Date();
+  const year = Number(searchParams.get("year") || now.getFullYear());
+  const month = Number(searchParams.get("month") || now.getMonth() + 1);
 
-  if (!facilityId) {
-    return NextResponse.json({ error: "facilityId required" }, { status: 400 });
+  // facilityId is interpolated into an external Recreation.gov URL — allow only
+  // digits so it can't be used to reshape the request (SSRF / injection guard).
+  if (!facilityId || !/^\d{1,10}$/.test(facilityId)) {
+    return NextResponse.json({ error: "Valid numeric facilityId required" }, { status: 400 });
+  }
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+    return NextResponse.json({ error: "Invalid year" }, { status: 400 });
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return NextResponse.json({ error: "Invalid month" }, { status: 400 });
   }
 
   try {

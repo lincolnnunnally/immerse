@@ -8,10 +8,12 @@ export async function GET(req: NextRequest) {
 
   const lat = searchParams.get("lat");
   const lng = searchParams.get("lng");
-  const state = (searchParams.get("state") || "GA").toUpperCase();
-  const radius = Number(searchParams.get("radius") || 100);
-  const query = searchParams.get("q") || undefined;
-  const limit = Number(searchParams.get("limit") || 50);
+  const state = (searchParams.get("state") || "GA").toUpperCase().slice(0, 2);
+  const clamp = (n: number, lo: number, hi: number, dflt: number) =>
+    Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
+  const radius = clamp(Number(searchParams.get("radius")), 1, 500, 100);
+  const query = (searchParams.get("q") || undefined)?.slice(0, 120);
+  const limit = clamp(Number(searchParams.get("limit")), 1, 200, 50);
   const activityFilter = (searchParams.get("activity") || "camping").toLowerCase();
 
   if (process.env.RIDB_API_KEY) {
