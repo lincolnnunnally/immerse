@@ -32,7 +32,7 @@ export default function RootLayout({
                 Immerse
               </span>
             </a>
-            <nav className="flex items-center gap-5 text-sm font-medium text-forest-700">
+            <nav className="flex items-center gap-4 text-sm font-medium text-forest-700">
               <a href="/search" className="hover:text-forest-500 transition">
                 Search
               </a>
@@ -41,6 +41,9 @@ export default function RootLayout({
               </a>
               <a href="/host" className="hover:text-forest-500 transition">
                 Host
+              </a>
+              <a href="/trust" className="hover:text-forest-500 transition">
+                Trust
               </a>
             </nav>
           </div>
