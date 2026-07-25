@@ -5,6 +5,36 @@ import { extractFacilityId } from "@/lib/trips";
 import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { SaveTripButton } from "@/components/SaveTripButton";
 
+function accessLabel(access?: string) {
+  switch (access) {
+    case "any_vehicle":
+      return "Any vehicle";
+    case "high_clearance":
+      return "High clearance recommended";
+    case "4x4":
+      return "4x4 recommended";
+    case "hike_in":
+      return "Hike-in";
+    case "ohv_only":
+      return "OHV / designated vehicles only";
+    default:
+      return "See details";
+  }
+}
+
+function statusLabel(status?: string) {
+  switch (status) {
+    case "open":
+      return "Open";
+    case "seasonal":
+      return "Seasonal";
+    case "closed":
+      return "Closed";
+    default:
+      return "Status unknown";
+  }
+}
+
 export default async function SitePage({
   params,
 }: {
@@ -23,6 +53,8 @@ export default async function SitePage({
       ? "WMA / Wildlife Area"
       : site.type === "ohv"
       ? "OHV / 4x4"
+      : site.type === "private"
+      ? "Private nature stay"
       : "Developed Campground";
 
   return (
@@ -34,10 +66,25 @@ export default async function SitePage({
         ← Back to search
       </Link>
 
-      <div className="mb-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-forest-500">
           {typeLabel}
         </span>
+        {site.status && (
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              site.status === "open"
+                ? "bg-emerald-100 text-emerald-800"
+                : site.status === "seasonal"
+                ? "bg-amber-100 text-amber-900"
+                : site.status === "closed"
+                ? "bg-red-100 text-red-800"
+                : "bg-forest-100 text-forest-700"
+            }`}
+          >
+            {statusLabel(site.status)}
+          </span>
+        )}
       </div>
       <h1 className="text-3xl font-bold text-forest-900 mb-1">{site.name}</h1>
       {site.agency && <p className="text-forest-600 mb-4">{site.agency}</p>}
@@ -58,6 +105,21 @@ export default async function SitePage({
 
       <p className="text-lg text-forest-800 leading-relaxed mb-8">{site.description}</p>
 
+      {/* Community pulse — one line, not a comment wall */}
+      {site.pulse && (
+        <section className="mb-8 p-4 rounded-2xl bg-sky-50 border border-sky-100">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-sky-700 mb-1">
+            Community pulse
+          </h2>
+          <p className="text-forest-900 font-medium">{site.pulse.summary}</p>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs text-sky-900/80">
+            {site.pulse.crowd && <span>Crowd: {site.pulse.crowd}</span>}
+            {site.pulse.roadNote && <span>Road: {site.pulse.roadNote}</span>}
+            {site.pulse.lastVerified && <span>Verified: {site.pulse.lastVerified}</span>}
+          </div>
+        </section>
+      )}
+
       {/* Clarity grid */}
       <section className="bg-white rounded-2xl border border-forest-100 p-6 mb-8 shadow-sm">
         <h2 className="font-semibold text-forest-900 mb-4 text-lg">Everything you need to know</h2>
@@ -68,6 +130,15 @@ export default async function SitePage({
               {site.driveTimeMinutes
                 ? `~${Math.floor(site.driveTimeMinutes / 60)}h ${site.driveTimeMinutes % 60}m`
                 : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-forest-500 mb-0.5">Access</dt>
+            <dd className="font-medium text-forest-900 text-base">
+              {accessLabel(site.access)}
+              {site.roadQuality && site.roadQuality !== "unknown"
+                ? ` · ${site.roadQuality} road`
+                : ""}
             </dd>
           </div>
           <div>
@@ -123,10 +194,38 @@ export default async function SitePage({
         </dl>
       </section>
 
-      {/* Live availability */}
-      <AvailabilityPanel facilityId={facilityId} reservationUrl={site.reservationUrl} />
+      {/* Private host nature rules */}
+      {site.privateHost && (
+        <section className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6">
+          <h2 className="font-semibold text-forest-900 text-lg mb-1">Private nature stay</h2>
+          <p className="text-sm text-forest-700 mb-4">
+            Max {site.privateHost.maxSites} site{site.privateHost.maxSites === 1 ? "" : "s"} on this
+            property — capped so it never becomes a commercial campground.
+            {site.privateHost.naturePledge && " Host has taken the nature-first pledge."}
+          </p>
+          {site.privateHost.nightlyRate && (
+            <p className="text-sm font-medium text-forest-900 mb-3">
+              Typical rate: {site.privateHost.nightlyRate}
+            </p>
+          )}
+          <ul className="space-y-1.5 text-sm text-forest-800">
+            {site.privateHost.immersionRules.map((rule) => (
+              <li key={rule} className="flex gap-2">
+                <span className="text-emerald-700">▸</span>
+                {rule}
+              </li>
+            ))}
+          </ul>
+          <Link href="/host" className="inline-block mt-4 text-sm font-medium text-forest-700 underline">
+            How private listings work on Immerse →
+          </Link>
+        </section>
+      )}
 
-      {/* Must-sees */}
+      {site.type !== "private" && (
+        <AvailabilityPanel facilityId={facilityId} reservationUrl={site.reservationUrl} />
+      )}
+
       <section className="mb-8">
         <h2 className="font-semibold text-forest-900 mb-3 text-lg">Must-sees & highlights</h2>
         <ul className="space-y-2">
@@ -161,7 +260,6 @@ export default async function SitePage({
         </section>
       )}
 
-      {/* Sample itinerary */}
       <section className="bg-forest-50 rounded-2xl p-6 border border-forest-100">
         <h2 className="font-semibold text-forest-900 mb-1 text-lg">Sample 2-night immersion plan</h2>
         <p className="text-sm text-forest-600 mb-5">
