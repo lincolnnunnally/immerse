@@ -4,6 +4,10 @@ import { getSiteById } from "@/lib/mock-sites";
 import { extractFacilityId } from "@/lib/trips";
 import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { SaveTripButton } from "@/components/SaveTripButton";
+import {
+  EXAMPLE_HOST_PROFILE,
+  TrustProfileCard,
+} from "@/components/TrustProfileCard";
 
 function accessLabel(access?: string) {
   switch (access) {
@@ -91,7 +95,15 @@ export default async function SitePage({
 
       <div className="flex flex-wrap gap-3 mb-8">
         <SaveTripButton site={site} />
-        {site.reservationUrl && (
+        {site.type === "private" && (
+          <Link
+            href={`/book/${site.id}`}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800 transition"
+          >
+            Request stay →
+          </Link>
+        )}
+        {site.reservationUrl && site.type !== "private" && (
           <a
             href={site.reservationUrl}
             target="_blank"
@@ -105,7 +117,6 @@ export default async function SitePage({
 
       <p className="text-lg text-forest-800 leading-relaxed mb-8">{site.description}</p>
 
-      {/* Community pulse — one line, not a comment wall */}
       {site.pulse && (
         <section className="mb-8 p-4 rounded-2xl bg-sky-50 border border-sky-100">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-sky-700 mb-1">
@@ -120,7 +131,6 @@ export default async function SitePage({
         </section>
       )}
 
-      {/* Clarity grid */}
       <section className="bg-white rounded-2xl border border-forest-100 p-6 mb-8 shadow-sm">
         <h2 className="font-semibold text-forest-900 mb-4 text-lg">Everything you need to know</h2>
         <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
@@ -194,32 +204,50 @@ export default async function SitePage({
         </dl>
       </section>
 
-      {/* Private host nature rules */}
       {site.privateHost && (
-        <section className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6">
-          <h2 className="font-semibold text-forest-900 text-lg mb-1">Private nature stay</h2>
-          <p className="text-sm text-forest-700 mb-4">
-            Max {site.privateHost.maxSites} site{site.privateHost.maxSites === 1 ? "" : "s"} on this
-            property — capped so it never becomes a commercial campground.
-            {site.privateHost.naturePledge && " Host has taken the nature-first pledge."}
-          </p>
-          {site.privateHost.nightlyRate && (
-            <p className="text-sm font-medium text-forest-900 mb-3">
-              Typical rate: {site.privateHost.nightlyRate}
+        <>
+          <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6">
+            <h2 className="font-semibold text-forest-900 text-lg mb-1">Private nature stay</h2>
+            <p className="text-sm text-forest-700 mb-4">
+              Max {site.privateHost.maxSites} site
+              {site.privateHost.maxSites === 1 ? "" : "s"} on this property — capped so it never
+              becomes a commercial campground.
+              {site.privateHost.naturePledge && " Host has taken the nature-first pledge."}
             </p>
-          )}
-          <ul className="space-y-1.5 text-sm text-forest-800">
-            {site.privateHost.immersionRules.map((rule) => (
-              <li key={rule} className="flex gap-2">
-                <span className="text-emerald-700">▸</span>
-                {rule}
-              </li>
-            ))}
-          </ul>
-          <Link href="/host" className="inline-block mt-4 text-sm font-medium text-forest-700 underline">
-            How private listings work on Immerse →
-          </Link>
-        </section>
+            {site.privateHost.nightlyRate && (
+              <p className="text-sm font-medium text-forest-900 mb-3">
+                Typical rate: {site.privateHost.nightlyRate}
+              </p>
+            )}
+            <ul className="space-y-1.5 text-sm text-forest-800">
+              {site.privateHost.immersionRules.map((rule) => (
+                <li key={rule} className="flex gap-2">
+                  <span className="text-emerald-700">▸</span>
+                  {rule}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 p-3 rounded-xl bg-white/80 border border-emerald-100 text-sm text-forest-800">
+              <strong>No surprise contracts.</strong> Every rule you must follow is listed on this
+              page and confirmed in the Request stay flow <em>before</em> payment. Hosts cannot send
+              extra waivers or off-app agreements after you book.{" "}
+              <Link href="/trust" className="underline font-medium">
+                Trust policy →
+              </Link>
+            </div>
+            <Link
+              href={`/book/${site.id}`}
+              className="inline-flex mt-4 px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800"
+            >
+              Request stay — agree to rules in-app →
+            </Link>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="font-semibold text-forest-900 mb-3 text-lg">Host reputation</h2>
+            <TrustProfileCard profile={EXAMPLE_HOST_PROFILE} />
+          </section>
+        </>
       )}
 
       {site.type !== "private" && (
