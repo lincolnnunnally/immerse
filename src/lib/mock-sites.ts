@@ -1,15 +1,15 @@
 import { CampSite } from "./types";
+import { privateNatureStays } from "./private-sites";
 
 /**
  * Curated Georgia-focused data so the app is useful immediately.
  * Drive times approximate from metro Atlanta / Conyers area.
  *
  * When RIDB_API_KEY is present, the search API pulls live federal facilities
- * and these curated entries act as enrichment + dispersed/WMA/OHV coverage
+ * and these curated entries act as enrichment + dispersed/WMA/OHV/private coverage
  * that RIDB does not fully cover.
  */
-export const mockSites: CampSite[] = [
-  // ─── Developed National Forest ───────────────────────────────────────
+const publicSites: CampSite[] = [
   {
     id: "desoto-falls",
     name: "Desoto Falls Recreation Area",
@@ -36,6 +36,15 @@ export const mockSites: CampSite[] = [
     notes: "Fills quickly on weekends. Book early or aim for mid-week. Senior/Access passes often get camping discounts.",
     activities: ["Camping", "Hiking", "Waterfall viewing"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    pulse: {
+      summary: "Busy on weekends; book early. Falls trail short and family-friendly.",
+      crowd: "busy",
+      lastVerified: "2026-07",
+      source: "curated",
+    },
   },
   {
     id: "tate-branch",
@@ -62,6 +71,15 @@ export const mockSites: CampSite[] = [
       "Quiet 17-site campground at the junction of Tallulah River and Tate Branch. Includes walk-in tent sites for a more rustic feel while still having basic facilities.",
     activities: ["Camping", "Fishing", "Hiking"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "gravel",
+    pulse: {
+      summary: "Quieter than Desoto; good mid-week option.",
+      crowd: "moderate",
+      lastVerified: "2026-06",
+      source: "curated",
+    },
   },
   {
     id: "upper-chattahoochee",
@@ -88,6 +106,15 @@ export const mockSites: CampSite[] = [
       "19-site developed campground near the headwaters of the Chattahoochee. Short walking trail to Horse Trough Falls right from the back of the campground. Beautiful mountain approach.",
     activities: ["Camping", "Hiking", "Waterfall viewing"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "gravel",
+    pulse: {
+      summary: "Scenic approach; Horse Trough Falls is the highlight.",
+      crowd: "moderate",
+      lastVerified: "2026-07",
+      source: "curated",
+    },
   },
   {
     id: "andrews-cove",
@@ -114,6 +141,9 @@ export const mockSites: CampSite[] = [
       "Peaceful streamside campground only about 15 minutes from the alpine village of Helen. Good balance of nature immersion and convenience.",
     activities: ["Camping", "Hiking"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
   },
   {
     id: "lake-russell",
@@ -140,6 +170,9 @@ export const mockSites: CampSite[] = [
       "42-site campground on Lake Russell with both tent and RV options. Reservation only. Good for families who want water access without a long drive into the high mountains.",
     activities: ["Camping", "Fishing", "Boating", "Swimming"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
   },
   {
     id: "frank-gross",
@@ -166,9 +199,16 @@ export const mockSites: CampSite[] = [
       "Smaller developed campground on Rock Creek in the Ed Jenkins National Recreation Area. Affordable and peaceful — good mid-week escape.",
     activities: ["Camping", "Fishing", "Hiking"],
     dataSource: "curated",
+    status: "seasonal",
+    access: "any_vehicle",
+    roadQuality: "gravel",
+    pulse: {
+      summary: "Typically April–Oct; quiet when open.",
+      crowd: "quiet",
+      lastVerified: "2026-05",
+      source: "curated",
+    },
   },
-
-  // ─── Dispersed / Free National Forest ────────────────────────────────
   {
     id: "ball-field-dispersed",
     name: "Ball Field Dispersed Camping Area",
@@ -194,6 +234,16 @@ export const mockSites: CampSite[] = [
     activities: ["Camping", "Hiking", "Wilderness access"],
     ohvFriendly: false,
     dataSource: "curated",
+    status: "open",
+    access: "high_clearance",
+    roadQuality: "rough",
+    pulse: {
+      summary: "High clearance recommended when wet. True dispersed feel; pack out everything.",
+      crowd: "moderate",
+      roadNote: "Approach road rough after rain",
+      lastVerified: "2026-07",
+      source: "curated",
+    },
   },
   {
     id: "jones-creek-dispersed",
@@ -219,6 +269,15 @@ export const mockSites: CampSite[] = [
     notes: "Drive the road carefully. Do not park exactly where generic maps sometimes point.",
     activities: ["Camping", "Fishing"],
     dataSource: "curated",
+    status: "open",
+    access: "high_clearance",
+    roadQuality: "rough",
+    pulse: {
+      summary: "Narrow dirt access; more secluded than developed sites.",
+      crowd: "quiet",
+      lastVerified: "2026-06",
+      source: "curated",
+    },
   },
   {
     id: "hickey-gap",
@@ -243,9 +302,10 @@ export const mockSites: CampSite[] = [
       "Small primitive / dispersed-style sites along Mills Creek. Often quieter alternative near the Ball Field / Lake Conasauga corridor.",
     activities: ["Camping", "Fishing"],
     dataSource: "curated",
+    status: "open",
+    access: "high_clearance",
+    roadQuality: "gravel",
   },
-
-  // ─── Georgia Wildlife Management Areas (WMA) ─────────────────────────
   {
     id: "ocmulgee-flats-wma",
     name: "Ocmulgee Flats Hunt Camp (Oconee NF / WMA area)",
@@ -270,6 +330,15 @@ export const mockSites: CampSite[] = [
     notes: "Follow all WMA / forest rules. Pack out everything. Check hunting seasons before going.",
     activities: ["Camping", "Hunting (seasonal)", "Hiking", "Fishing"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "gravel",
+    pulse: {
+      summary: "Check hunting seasons before going; quieter outside them.",
+      crowd: "quiet",
+      lastVerified: "2026-05",
+      source: "curated",
+    },
   },
   {
     id: "crockford-pigeon-wma",
@@ -295,6 +364,9 @@ export const mockSites: CampSite[] = [
     notes: "Always verify current Georgia DNR WMA regulations and any required licenses before camping.",
     activities: ["Camping", "Hiking", "Hunting (seasonal)", "Wildlife viewing"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "gravel",
   },
   {
     id: "pine-log-wma",
@@ -320,9 +392,10 @@ export const mockSites: CampSite[] = [
     notes: "Confirm current camping and pass rules on the Georgia DNR site before you go.",
     activities: ["Camping", "Hiking", "Mountain biking", "Hunting (seasonal)"],
     dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "gravel",
   },
-
-  // ─── Specific OHV / trail systems ────────────────────────────────────
   {
     id: "houston-valley-ohv",
     name: "Houston Valley OHV Area",
@@ -350,6 +423,16 @@ export const mockSites: CampSite[] = [
     activities: ["OHV / ATV", "Motorcycle", "UTV (width limits)"],
     ohvFriendly: true,
     dataSource: "curated",
+    status: "open",
+    access: "ohv_only",
+    roadQuality: "paved",
+    pulse: {
+      summary: "Call before you haul after rain. Day or annual OHV pass required.",
+      crowd: "busy",
+      roadNote: "Staging is paved; trails close when wet",
+      lastVerified: "2026-07",
+      source: "official",
+    },
   },
   {
     id: "beasley-knob-ohv",
@@ -376,6 +459,15 @@ export const mockSites: CampSite[] = [
     activities: ["OHV / 4x4", "ATV", "Motorcycle"],
     ohvFriendly: true,
     dataSource: "curated",
+    status: "seasonal",
+    access: "4x4",
+    roadQuality: "technical",
+    pulse: {
+      summary: "Experienced riders; weather closures common. Confirm status before going.",
+      crowd: "moderate",
+      lastVerified: "2026-07",
+      source: "official",
+    },
   },
   {
     id: "whissenhunt-ohv",
@@ -403,6 +495,9 @@ export const mockSites: CampSite[] = [
     activities: ["OHV / ATV", "Motorcycle"],
     ohvFriendly: true,
     dataSource: "curated",
+    status: "open",
+    access: "ohv_only",
+    roadQuality: "gravel",
   },
   {
     id: "oakey-mountain-ohv",
@@ -429,6 +524,9 @@ export const mockSites: CampSite[] = [
     activities: ["OHV / ATV", "Motorcycle"],
     ohvFriendly: true,
     dataSource: "curated",
+    status: "open",
+    access: "ohv_only",
+    roadQuality: "technical",
   },
   {
     id: "locust-stake-ohv",
@@ -455,8 +553,13 @@ export const mockSites: CampSite[] = [
     activities: ["OHV / ATV", "Motorcycle"],
     ohvFriendly: true,
     dataSource: "curated",
+    status: "open",
+    access: "ohv_only",
+    roadQuality: "gravel",
   },
 ];
+
+export const mockSites: CampSite[] = [...publicSites, ...privateNatureStays];
 
 export function getSiteById(id: string): CampSite | undefined {
   return mockSites.find((s) => s.id === id);
@@ -468,4 +571,8 @@ export function getSitesByType(type: CampSite["type"]) {
 
 export function getOhvSites() {
   return mockSites.filter((s) => s.ohvFriendly || s.type === "ohv");
+}
+
+export function getPrivateSites() {
+  return mockSites.filter((s) => s.type === "private");
 }
