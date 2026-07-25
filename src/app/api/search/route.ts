@@ -12,15 +12,10 @@ export async function GET(req: NextRequest) {
   const radius = Number(searchParams.get("radius") || 100);
   const query = searchParams.get("q") || undefined;
   const limit = Number(searchParams.get("limit") || 50);
-  // activity: camping | ohv | all
   const activityFilter = (searchParams.get("activity") || "camping").toLowerCase();
 
-  // Prefer live RIDB when key is present
   if (process.env.RIDB_API_KEY) {
     try {
-      // RIDB activity IDs (common ones):
-      // 9 = Camping, others exist for OHV, hiking, etc. We start with camping.
-      // When activity=ohv we can broaden or drop the filter and post-filter later.
       const activityParam = activityFilter === "ohv" ? undefined : "9";
 
       const params: Parameters<typeof searchFacilities>[0] = {
@@ -47,12 +42,14 @@ export async function GET(req: NextRequest) {
           return mapped;
         });
 
-      // For Georgia, merge in curated dispersed / WMA / OHV entries that RIDB under-represents
       if (state === "GA") {
         const curatedExtra = mockSites.filter(
-          (s) => s.type === "dispersed" || s.type === "wma" || s.type === "ohv"
+          (s) =>
+            s.type === "dispersed" ||
+            s.type === "wma" ||
+            s.type === "ohv" ||
+            s.type === "private"
         );
-        // Avoid duplicates by rough name match
         const existingNames = new Set(sites.map((s) => s.name.toLowerCase()));
         curatedExtra.forEach((c) => {
           if (!existingNames.has(c.name.toLowerCase())) {
@@ -66,7 +63,9 @@ export async function GET(req: NextRequest) {
           (s) =>
             s.ohvFriendly ||
             s.type === "ohv" ||
-            (s.activities || []).some((a) => a.toLowerCase().includes("ohv") || a.toLowerCase().includes("4x4"))
+            (s.activities || []).some(
+              (a) => a.toLowerCase().includes("ohv") || a.toLowerCase().includes("4x4")
+            )
         );
       }
 
@@ -79,11 +78,9 @@ export async function GET(req: NextRequest) {
       });
     } catch (err) {
       console.error("RIDB search failed, falling back to mock:", err);
-      // fall through
     }
   }
 
-  // Fallback / no-key path: curated Georgia set
   let sites = state === "GA" ? [...mockSites] : [];
 
   if (query) {
@@ -101,6 +98,8 @@ export async function GET(req: NextRequest) {
     sites = sites.filter((s) => s.ohvFriendly || s.type === "ohv");
   } else if (activityFilter === "dispersed") {
     sites = sites.filter((s) => s.type === "dispersed" || s.type === "wma");
+  } else if (activityFilter === "private") {
+    sites = sites.filter((s) => s.type === "private");
   }
 
   return NextResponse.json({
@@ -109,21 +108,26 @@ export async function GET(req: NextRequest) {
     total: sites.length,
     count: sites.length,
     sites,
-    message:
-      process.env.RIDB_API_KEY
-        ? "RIDB call failed – showing curated data"
-        : state === "GA"
-        ? "No RIDB_API_KEY yet – showing curated Georgia data (NF + dispersed + WMAs + OHV placeholder). Drop the key in .env.local and restart to unlock live federal results."
-        : `No RIDB_API_KEY and no curated set for ${state} yet. Add the free key from ridb.recreation.gov to search federal lands nationwide.`,
+    message: process.env.RIDB_API_KEY
+      ? "RIDB call failed – showing curated data"
+      : state === "GA"
+      ? "No RIDB_API_KEY yet – showing curated Georgia data (NF + dispersed + WMAs + OHV + private nature stays). Drop the key in .env.local and restart for live federal results."
+      : `No RIDB_API_KEY and no curated set for ${state} yet. Add the free key from ridb.recreation.gov to search federal lands nationwide.`,
   });
 }
 
-function inferLandManager(f: { FacilityTypeDescription?: string; [key: string]: unknown }): CampSite["landManager"] {
-  const org = String((f as any).OrgName || (f as any).OrganizationName || "").toLowerCase();
+function inferLandManager(f: {
+  FacilityTypeDescription?: string;
+  [key: string]: unknown;
+}): CampSite["landManager"] {
+  const org = String(
+    (f as any).OrgName || (f as any).OrganizationName || ""
+  ).toLowerCase();
   if (org.includes("forest") || org.includes("usfs")) return "USFS";
   if (org.includes("national park") || org.includes("nps")) return "NPS";
   if (org.includes("blm") || org.includes("land management")) return "BLM";
   if (org.includes("corps") || org.includes("usace")) return "USACE";
-  if (org.includes("fish") || org.includes("wildlife") || org.includes("fws")) return "FWS";
+  if (org.includes("fish") || org.includes("wildlife") || org.includes("fws"))
+    return "FWS";
   return "Other";
 }
