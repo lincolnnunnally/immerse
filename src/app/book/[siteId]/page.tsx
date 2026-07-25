@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { getSiteById } from "@/lib/mock-sites";
 import { BOOKING_POLICY, buildAgreedRules } from "@/lib/booking";
-import { DEFAULT_NATURE_EXPECTATIONS } from "@/lib/trust";
+import { DEFAULT_NATURE_EXPECTATIONS, WILDLIFE_PROTECTION_RULE } from "@/lib/trust";
 
 export default function BookPage() {
   const params = useParams();
@@ -60,7 +60,6 @@ export default function BookPage() {
 
   function handleConfirm() {
     if (!canConfirm) return;
-    // Payment integration later — this freezes the agreement snapshot pre-pay
     setSubmitted(true);
   }
 
@@ -69,11 +68,11 @@ export default function BookPage() {
       <div className="max-w-xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-forest-900 mb-3">Agreement locked</h1>
         <p className="text-forest-700 mb-2">
-          Your stay rules for <strong>{site.name}</strong> are recorded in Immerse.
+          Your stay rules for <strong>{site.name}</strong> are recorded in Immerse — including the
+          wildlife protection commitment.
         </p>
         <p className="text-sm text-forest-600 mb-8">
-          Payment will plug in here next. Important: the host cannot add new contracts after this
-          point. If they try, you can cancel under Immerse policy.
+          Payment will plug in here next. The host cannot add new contracts after this point.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link
@@ -83,10 +82,10 @@ export default function BookPage() {
             Back to site
           </Link>
           <Link
-            href="/trust"
+            href="/policy/severe-abuse"
             className="inline-flex px-5 py-2.5 rounded-full border border-forest-300 text-forest-800 font-medium"
           >
-            Trust & Care
+            Severe abuse policy
           </Link>
         </div>
       </div>
@@ -105,16 +104,22 @@ export default function BookPage() {
       <h1 className="text-2xl font-bold text-forest-900 mb-1">Request this nature stay</h1>
       <p className="text-forest-600 text-sm mb-8">
         Everything you must agree to is on this screen — before any payment. No surprise contracts
-        from the host afterward.
+        afterward.
       </p>
 
-      {/* Anti-scam banner */}
-      <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+      <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
         <p className="font-semibold mb-1">Platform promise</p>
         <p>{BOOKING_POLICY.noPostPaymentAgreements}</p>
       </div>
 
-      {/* Dates */}
+      <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <p className="font-semibold mb-1">Wildlife is not optional</p>
+        <p className="mb-2">{BOOKING_POLICY.wildlifeRequired}</p>
+        <Link href="/policy/severe-abuse" className="font-medium underline">
+          What happens if wildlife or land is severely abused →
+        </Link>
+      </div>
+
       <section className="mb-8 space-y-4">
         <h2 className="font-semibold text-forest-900">Dates</h2>
         <label className="block text-sm">
@@ -157,26 +162,41 @@ export default function BookPage() {
         )}
       </section>
 
-      {/* Full agreement checklist — must complete before pay */}
       <section className="mb-8">
         <h2 className="font-semibold text-forest-900 mb-1">Agree to stay rules</h2>
         <p className="text-xs text-forest-500 mb-4">
-          Check each item. This is the complete agreement for this stay.
+          Check each item. The wildlife rule is required and listed first.
         </p>
         <ul className="space-y-3">
-          {rules.map((rule, i) => (
-            <li key={i}>
-              <label className="flex gap-3 items-start text-sm text-forest-800 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!!checked[i]}
-                  onChange={() => toggleRule(i)}
-                  className="mt-1 rounded border-forest-300"
-                />
-                <span>{rule}</span>
-              </label>
-            </li>
-          ))}
+          {rules.map((rule, i) => {
+            const isWildlife = rule === WILDLIFE_PROTECTION_RULE;
+            return (
+              <li key={i}>
+                <label
+                  className={`flex gap-3 items-start text-sm cursor-pointer rounded-xl p-3 ${
+                    isWildlife
+                      ? "bg-amber-50 border border-amber-200 text-amber-950"
+                      : "text-forest-800"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!checked[i]}
+                    onChange={() => toggleRule(i)}
+                    className="mt-1 rounded border-forest-300"
+                  />
+                  <span>
+                    {isWildlife && (
+                      <span className="block text-xs font-semibold uppercase tracking-wide text-amber-800 mb-1">
+                        Required — wildlife
+                      </span>
+                    )}
+                    {rule}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -189,7 +209,11 @@ export default function BookPage() {
             className="mt-1"
           />
           <span>
-            I agree to Immerse platform terms and the Trust & Care rules for private nature stays.
+            I agree to Immerse platform terms, Trust & Care, and the{" "}
+            <Link href="/policy/severe-abuse" className="underline">
+              severe abuse policy
+            </Link>
+            .
           </span>
         </label>
         <label className="flex gap-3 items-start text-sm text-forest-800 cursor-pointer">
@@ -200,8 +224,8 @@ export default function BookPage() {
             className="mt-1"
           />
           <span>
-            I understand the host cannot require any extra contract, waiver, or off-platform payment
-            after I book. If they do, I can cancel under Immerse policy.
+            I understand the host cannot require any extra contract after I book. If they do, I can
+            cancel under Immerse policy.
           </span>
         </label>
       </section>
