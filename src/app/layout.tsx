@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthNav } from "@/components/AuthNav";
+import { Telemetry } from '../lib/TelemetryProvider';
 
 export const metadata: Metadata = {
   title: "Immerse — Find & Plan Nature Camping Trips",
@@ -55,6 +56,7 @@ export default function RootLayout({
           <p>Built to remove the barriers between you and nature.</p>
           <p className="mt-1 text-forest-400">Immerse © 2026</p>
         </footer>
+        <Telemetry app="immerse" />
       </body>
     </html>
   );
