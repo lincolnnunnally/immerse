@@ -118,47 +118,14 @@ export async function getFacilityCampsites(facilityId: string | number, limit = 
   return data.RECDATA || [];
 }
 
-/**
- * Public (no key) Recreation.gov availability endpoint.
- * start_date MUST be the first of the month: YYYY-MM-01T00:00:00.000Z
- */
+/** @deprecated use fetchCampgroundMonth from @/lib/availability */
 export async function getCampgroundAvailabilityMonth(
   facilityId: string | number,
   year: number,
-  month: number // 1-12
+  month: number
 ) {
-  const start = `${year}-${String(month).padStart(2, "0")}-01T00:00:00.000Z`;
-  const url = `https://www.recreation.gov/api/camps/availability/campground/${facilityId}/month?start_date=${encodeURIComponent(start)}`;
-
-  const res = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      "user-agent": "ImmerseCampPlanner/0.1 (nature immersion tool)",
-    },
-    next: { revalidate: 300 }, // 5 min cache for availability
-  });
-
-  if (!res.ok) {
-    throw new Error(`Availability ${res.status}`);
-  }
-
-  return res.json() as Promise<{
-    campsites: Record<
-      string,
-      {
-        campsite_id: string;
-        site: string;
-        loop: string;
-        campsite_type: string;
-        campsite_reserve_type: string;
-        availabilities: Record<string, string>; // date -> "Available" | "Reserved" | ...
-        max_num_people?: number;
-        min_num_people?: number;
-        type_of_use?: string;
-      }
-    >;
-    count: number;
-  }>;
+  const { fetchCampgroundMonth } = await import("./availability");
+  return fetchCampgroundMonth(facilityId, year, month);
 }
 
 /**

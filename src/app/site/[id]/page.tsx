@@ -2,12 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveSite } from "@/lib/sites";
 import { extractFacilityId } from "@/lib/trips";
-import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { SaveTripButton } from "@/components/SaveTripButton";
 import { EXAMPLE_HOST_PROFILE, TrustProfileCard } from "@/components/TrustProfileCard";
 import { SitesMap } from "@/components/SitesMap";
 import { DirectionsLinks } from "@/components/DirectionsLinks";
 import { SitePhoto } from "@/components/SitePhoto";
+import { ScheduleTripPanel } from "@/components/ScheduleTripPanel";
 import { hasValidCoords } from "@/lib/maps";
 
 function accessLabel(access?: string) {
@@ -323,7 +323,7 @@ export default async function SitePage({
       )}
 
       {site.type !== "private" && (
-        <AvailabilityPanel facilityId={facilityId} reservationUrl={site.reservationUrl} />
+        <ScheduleTripPanel site={site} facilityId={facilityId} />
       )}
 
       {site.mustSees.length > 0 && (

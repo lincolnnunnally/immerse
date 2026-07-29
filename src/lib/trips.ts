@@ -173,9 +173,36 @@ export async function removeTrip(siteId: string): Promise<void> {
 /** Extract Recreation.gov campground ID from a reservation URL when present */
 export function extractFacilityId(reservationUrl?: string, siteId?: string): string | null {
   if (reservationUrl) {
-    const match = reservationUrl.match(/campgrounds\/(\d+)/i);
+    const match = reservationUrl.match(/campgrounds\/(\d{1,12})/i);
     if (match) return match[1];
   }
-  if (siteId && /^\d+$/.test(siteId)) return siteId;
+  if (siteId && /^\d{1,12}$/.test(siteId)) return siteId;
   return null;
+}
+
+/** Deep link to Recreation.gov for a saved stay when we have dates. */
+export function tripBookingUrl(trip: {
+  siteId: string;
+  reservationUrl?: string;
+  plannedArrival?: string;
+  nights?: number;
+}): string | null {
+  const facilityId =
+    extractFacilityId(trip.reservationUrl, trip.siteId) ||
+    (trip.reservationUrl ? null : /^\d+$/.test(trip.siteId) ? trip.siteId : null);
+
+  if (trip.plannedArrival && trip.nights && facilityId) {
+    const start = new Date(`${trip.plannedArrival}T12:00:00Z`);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + trip.nights);
+    const endYmd = end.toISOString().slice(0, 10);
+    const base =
+      trip.reservationUrl?.split("?")[0] ||
+      `https://www.recreation.gov/camping/campgrounds/${facilityId}`;
+    const u = new URL(base);
+    u.searchParams.set("startDate", trip.plannedArrival);
+    u.searchParams.set("endDate", endYmd);
+    return u.toString();
+  }
+  return trip.reservationUrl || null;
 }
