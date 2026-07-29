@@ -8,6 +8,8 @@ Live: **https://immerse.unitedundergod.org**
 
 - Live federal campground search via Recreation.gov public API (no key required)
 - Optional RIDB key for richer federal inventory when set
+- Research maps on search + site pages (OpenStreetMap / Leaflet)
+- Directions open in **Google Maps, Apple Maps, or Waze** (no in-app turn-by-turn)
 - Georgia curated enrichment (dispersed, WMA, OHV, example private nature stays)
 - Site detail for curated **and** numeric federal IDs
 - Availability summaries for Recreation.gov campgrounds
@@ -45,7 +47,8 @@ npm run dev
 - [x] Site detail for live federal IDs
 - [x] Adventure YouTube posts + park partner interest
 - [x] Privacy / Terms / honest private-stay framing
-- [ ] Map + drive-from-me
+- [x] Research map + deep-link directions (Google / Apple / Waze)
+- [ ] Drive-time from user location (needs Mapbox or similar matrix API)
 - [ ] Full pass / parking enrichment beyond facility defaults
 - [ ] Live private hosts + payments only after fulfillment proven
 - [ ] Paid park marketing campaigns (after partner agreements)

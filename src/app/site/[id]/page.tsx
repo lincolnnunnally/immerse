@@ -5,6 +5,9 @@ import { extractFacilityId } from "@/lib/trips";
 import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { SaveTripButton } from "@/components/SaveTripButton";
 import { EXAMPLE_HOST_PROFILE, TrustProfileCard } from "@/components/TrustProfileCard";
+import { SitesMap } from "@/components/SitesMap";
+import { DirectionsLinks } from "@/components/DirectionsLinks";
+import { hasValidCoords } from "@/lib/maps";
 
 function accessLabel(access?: string) {
   switch (access) {
@@ -133,6 +136,36 @@ export default async function SitePage({
       </div>
 
       <p className="text-lg text-forest-800 leading-relaxed mb-8">{site.description}</p>
+
+      {hasValidCoords(site.lat, site.lng) && (
+        <section className="mb-8 space-y-4">
+          <div>
+            <h2 className="font-semibold text-forest-900 text-lg mb-1">Location</h2>
+            <p className="text-sm text-forest-600 mb-3">
+              Research the approach roads and terrain here. When you&apos;re ready to drive, open
+              directions in your preferred app below.
+            </p>
+            <SitesMap
+              mode="site"
+              height="h-72 md:h-80"
+              pins={[
+                {
+                  id: site.id,
+                  name: site.name,
+                  lat: site.lat,
+                  lng: site.lng,
+                  type: site.type,
+                },
+              ]}
+            />
+            <p className="mt-2 text-xs text-forest-500">
+              {site.lat.toFixed(5)}, {site.lng.toFixed(5)}
+              {site.elevation != null ? ` · ~${site.elevation.toLocaleString()} ft` : ""}
+            </p>
+          </div>
+          <DirectionsLinks lat={site.lat} lng={site.lng} name={site.name} />
+        </section>
+      )}
 
       {site.pulse && (
         <section className="mb-8 p-4 rounded-2xl bg-sky-50 border border-sky-100">

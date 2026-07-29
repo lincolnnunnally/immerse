@@ -12,9 +12,9 @@ export default function HomePage() {
             <span className="text-forest-300">Without the friction.</span>
           </h1>
           <p className="text-lg md:text-xl text-forest-100 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Find federal campgrounds and curated Georgia nature spots. See passes, parking, and
-            reservation links clearly. Save trips. Share YouTube adventure videos. Reserve public
-            land on Recreation.gov when you&apos;re ready.
+            Find federal campgrounds and curated Georgia nature spots on a research map. See
+            passes, parking, and reservation links clearly. Open directions in Google Maps, Apple
+            Maps, or Waze. Save trips and share YouTube adventure videos.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

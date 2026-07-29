@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "leaflet/dist/leaflet.css";
+
 :root {
   --foreground: #1c3d33;
   --background: #f7f5f0;
@@ -19,7 +21,18 @@ body {
   }
 }
 
-/* Mapbox overrides if needed */
-.mapboxgl-map {
+/* Leaflet map pins (custom divIcon) */
+.immerse-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-container {
   font: inherit;
+  z-index: 0;
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  line-height: 1.35;
 }

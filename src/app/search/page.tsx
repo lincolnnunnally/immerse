@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CampSite } from "@/lib/types";
 import { headers } from "next/headers";
+import { SitesMap } from "@/components/SitesMap";
+import { hasValidCoords } from "@/lib/maps";
 
 const STATES = [
   { code: "GA", label: "Georgia" },
@@ -301,11 +303,41 @@ export default async function SearchPage({
           </p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-5">
-          {sites.map((site) => (
-            <SiteCard key={site.id} site={site} />
-          ))}
-        </div>
+        <>
+          <section className="mb-8">
+            <div className="flex items-end justify-between gap-3 mb-3">
+              <div>
+                <h2 className="font-semibold text-forest-900 text-lg">Map of results</h2>
+                <p className="text-sm text-forest-600">
+                  Click a pin for the site. For turn-by-turn, open a site and use Google / Apple /
+                  Waze — we don&apos;t replace your preferred maps app.
+                </p>
+              </div>
+              <span className="text-xs text-forest-500 shrink-0">
+                {sites.filter((s) => hasValidCoords(s.lat, s.lng)).length} plotted
+              </span>
+            </div>
+            <SitesMap
+              mode="search"
+              pins={sites
+                .filter((s) => hasValidCoords(s.lat, s.lng))
+                .map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                  lat: s.lat,
+                  lng: s.lng,
+                  href: `/site/${s.id}`,
+                  type: s.type,
+                }))}
+            />
+          </section>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            {sites.map((site) => (
+              <SiteCard key={site.id} site={site} />
+            ))}
+          </div>
+        </>
       )}
 
       <p className="mt-12 text-center text-sm text-forest-500">
