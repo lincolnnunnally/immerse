@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getSiteById } from "@/lib/mock-sites";
+import { resolveSite } from "@/lib/sites";
 import { extractFacilityId } from "@/lib/trips";
 import { AvailabilityPanel } from "@/components/AvailabilityPanel";
 import { SaveTripButton } from "@/components/SaveTripButton";
-import {
-  EXAMPLE_HOST_PROFILE,
-  TrustProfileCard,
-} from "@/components/TrustProfileCard";
+import { EXAMPLE_HOST_PROFILE, TrustProfileCard } from "@/components/TrustProfileCard";
 
 function accessLabel(access?: string) {
   switch (access) {
@@ -45,21 +42,25 @@ export default async function SitePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const site = getSiteById(id);
+  const site = await resolveSite(id);
   if (!site) notFound();
 
   const facilityId = extractFacilityId(site.reservationUrl, site.id);
+  const isLiveFederal = site.dataSource === "ridb" || /^\d+$/.test(site.id);
+  const isExamplePrivate =
+    site.type === "private" &&
+    (site.dataSource === "private_host" || site.id.startsWith("private-"));
 
   const typeLabel =
     site.type === "dispersed"
       ? "Dispersed / Free"
       : site.type === "wma"
-      ? "WMA / Wildlife Area"
-      : site.type === "ohv"
-      ? "OHV / 4x4"
-      : site.type === "private"
-      ? "Private nature stay"
-      : "Developed Campground";
+        ? "WMA / Wildlife Area"
+        : site.type === "ohv"
+          ? "OHV / 4x4"
+          : site.type === "private"
+            ? "Private nature stay"
+            : "Developed Campground";
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -80,13 +81,23 @@ export default async function SitePage({
               site.status === "open"
                 ? "bg-emerald-100 text-emerald-800"
                 : site.status === "seasonal"
-                ? "bg-amber-100 text-amber-900"
-                : site.status === "closed"
-                ? "bg-red-100 text-red-800"
-                : "bg-forest-100 text-forest-700"
+                  ? "bg-amber-100 text-amber-900"
+                  : site.status === "closed"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-forest-100 text-forest-700"
             }`}
           >
             {statusLabel(site.status)}
+          </span>
+        )}
+        {isLiveFederal && (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-100">
+            Live federal data
+          </span>
+        )}
+        {isExamplePrivate && (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-50 text-violet-900 border border-violet-100">
+            Example listing · not bookable yet
           </span>
         )}
       </div>
@@ -100,7 +111,7 @@ export default async function SitePage({
             href={`/book/${site.id}`}
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800 transition"
           >
-            Request stay →
+            {isExamplePrivate ? "Express interest →" : "Request stay →"}
           </Link>
         )}
         {site.reservationUrl && site.type !== "private" && (
@@ -113,6 +124,12 @@ export default async function SitePage({
             Open Recreation.gov →
           </a>
         )}
+        <Link
+          href={`/adventures/new?siteId=${encodeURIComponent(site.id)}&siteName=${encodeURIComponent(site.name)}`}
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-forest-300 text-forest-800 text-sm font-semibold hover:bg-forest-50 transition"
+        >
+          Share adventure video
+        </Link>
       </div>
 
       <p className="text-lg text-forest-800 leading-relaxed mb-8">{site.description}</p>
@@ -121,6 +138,7 @@ export default async function SitePage({
         <section className="mb-8 p-4 rounded-2xl bg-sky-50 border border-sky-100">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-sky-700 mb-1">
             Community pulse
+            {site.pulse.source === "curated" ? " (curated note)" : ""}
           </h2>
           <p className="text-forest-900 font-medium">{site.pulse.summary}</p>
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-sky-900/80">
@@ -135,11 +153,16 @@ export default async function SitePage({
         <h2 className="font-semibold text-forest-900 mb-4 text-lg">Everything you need to know</h2>
         <dl className="grid sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
           <div>
-            <dt className="text-forest-500 mb-0.5">Drive time (from metro Atlanta / Conyers)</dt>
+            <dt className="text-forest-500 mb-0.5">
+              Drive time{" "}
+              {site.driveTimeMinutes != null
+                ? "(approx. from metro Atlanta / Conyers)"
+                : "(set your own plan)"}
+            </dt>
             <dd className="font-medium text-forest-900 text-base">
               {site.driveTimeMinutes
                 ? `~${Math.floor(site.driveTimeMinutes / 60)}h ${site.driveTimeMinutes % 60}m`
-                : "—"}
+                : "Not estimated for this listing — map it from your home"}
             </dd>
           </div>
           <div>
@@ -154,9 +177,11 @@ export default async function SitePage({
           <div>
             <dt className="text-forest-500 mb-0.5">Hike-in</dt>
             <dd className="font-medium text-forest-900 text-base">
-              {site.hikeInMiles === 0 || site.hikeInMiles == null
+              {site.hikeInMiles === 0
                 ? "Drive-up / no significant hike"
-                : `${site.hikeInMiles} miles`}
+                : site.hikeInMiles == null
+                  ? "Confirm on site / map"
+                  : `${site.hikeInMiles} miles`}
               {site.hikeInElevationGain ? ` · +${site.hikeInElevationGain} ft` : ""}
             </dd>
           </div>
@@ -170,7 +195,9 @@ export default async function SitePage({
           </div>
           <div>
             <dt className="text-forest-500 mb-0.5">Camping fee</dt>
-            <dd className="font-medium text-forest-900">{site.campingFee || "Free / check site"}</dd>
+            <dd className="font-medium text-forest-900">
+              {site.campingFee || "Free / check site"}
+            </dd>
           </div>
           <div>
             <dt className="text-forest-500 mb-0.5">Max stay</dt>
@@ -195,7 +222,7 @@ export default async function SitePage({
               )}
             </dd>
           </div>
-          {site.elevation && (
+          {site.elevation != null && (
             <div>
               <dt className="text-forest-500 mb-0.5">Elevation</dt>
               <dd className="font-medium text-forest-900">{site.elevation.toLocaleString()} ft</dd>
@@ -208,6 +235,13 @@ export default async function SitePage({
         <>
           <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6">
             <h2 className="font-semibold text-forest-900 text-lg mb-1">Private nature stay</h2>
+            {isExamplePrivate && (
+              <p className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
+                This is an <strong>example</strong> of how private nature stays will work. Hosts are
+                not live on Immerse yet — use Express interest to join the waitlist. No payment is
+                collected.
+              </p>
+            )}
             <p className="text-sm text-forest-700 mb-4">
               Max {site.privateHost.maxSites} site
               {site.privateHost.maxSites === 1 ? "" : "s"} on this property — capped so it never
@@ -227,25 +261,20 @@ export default async function SitePage({
                 </li>
               ))}
             </ul>
-            <div className="mt-5 p-3 rounded-xl bg-white/80 border border-emerald-100 text-sm text-forest-800">
-              <strong>No surprise contracts.</strong> Every rule you must follow is listed on this
-              page and confirmed in the Request stay flow <em>before</em> payment. Hosts cannot send
-              extra waivers or off-app agreements after you book.{" "}
-              <Link href="/trust" className="underline font-medium">
-                Trust policy →
-              </Link>
-            </div>
             <Link
               href={`/book/${site.id}`}
               className="inline-flex mt-4 px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800"
             >
-              Request stay — agree to rules in-app →
+              Express interest — agree to rules →
             </Link>
           </section>
 
           <section className="mb-8">
             <h2 className="font-semibold text-forest-900 mb-3 text-lg">Host reputation</h2>
-            <TrustProfileCard profile={EXAMPLE_HOST_PROFILE} />
+            <p className="text-xs text-forest-500 mb-2">
+              Preview of the trust card UI — not a real host score.
+            </p>
+            <TrustProfileCard profile={EXAMPLE_HOST_PROFILE} example />
           </section>
         </>
       )}
@@ -254,17 +283,19 @@ export default async function SitePage({
         <AvailabilityPanel facilityId={facilityId} reservationUrl={site.reservationUrl} />
       )}
 
-      <section className="mb-8">
-        <h2 className="font-semibold text-forest-900 mb-3 text-lg">Must-sees & highlights</h2>
-        <ul className="space-y-2">
-          {site.mustSees.map((item) => (
-            <li key={item} className="flex items-start gap-2 text-forest-800">
-              <span className="text-forest-500 mt-0.5">▸</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {site.mustSees.length > 0 && (
+        <section className="mb-8">
+          <h2 className="font-semibold text-forest-900 mb-3 text-lg">Must-sees & highlights</h2>
+          <ul className="space-y-2">
+            {site.mustSees.map((item) => (
+              <li key={item} className="flex items-start gap-2 text-forest-800">
+                <span className="text-forest-500 mt-0.5">▸</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {site.amenities.length > 0 && (
         <section className="mb-8">
@@ -288,10 +319,11 @@ export default async function SitePage({
         </section>
       )}
 
-      <section className="bg-forest-50 rounded-2xl p-6 border border-forest-100">
+      <section className="bg-forest-50 rounded-2xl p-6 border border-forest-100 mb-8">
         <h2 className="font-semibold text-forest-900 mb-1 text-lg">Sample 2-night immersion plan</h2>
         <p className="text-sm text-forest-600 mb-5">
-          Adjust dates once you lock the reservation. This is a starting template.
+          A starting template — not a booked itinerary. Adjust once you lock dates on
+          Recreation.gov or with a host.
         </p>
 
         <div className="space-y-5">
@@ -328,6 +360,20 @@ export default async function SitePage({
             </ul>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-forest-100 bg-white p-6">
+        <h2 className="font-semibold text-forest-900 mb-2">Share your adventure</h2>
+        <p className="text-sm text-forest-700 mb-4">
+          Link a YouTube video from your trip so others can see what the land feels like — and so
+          parks can see real people loving their places.
+        </p>
+        <Link
+          href={`/adventures/new?siteId=${encodeURIComponent(site.id)}&siteName=${encodeURIComponent(site.name)}`}
+          className="inline-flex px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800"
+        >
+          Post YouTube adventure →
+        </Link>
       </section>
     </div>
   );

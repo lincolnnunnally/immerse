@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchFacilities, mapFacilityToCampSite } from "@/lib/ridb";
 import { mockSites } from "@/lib/mock-sites";
+import {
+  searchRecGovCampgrounds,
+  mapRecGovToCampSite,
+  STATE_SEARCH_CENTERS,
+} from "@/lib/recgov";
 import { CampSite } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -16,6 +23,7 @@ export async function GET(req: NextRequest) {
   const limit = clamp(Number(searchParams.get("limit")), 1, 200, 50);
   const activityFilter = (searchParams.get("activity") || "camping").toLowerCase();
 
+  // ── Path A: RIDB with API key ──────────────────────────────────────────
   if (process.env.RIDB_API_KEY) {
     try {
       const activityParam = activityFilter === "ohv" ? undefined : "9";
@@ -44,32 +52,7 @@ export async function GET(req: NextRequest) {
           return mapped;
         });
 
-      if (state === "GA") {
-        const curatedExtra = mockSites.filter(
-          (s) =>
-            s.type === "dispersed" ||
-            s.type === "wma" ||
-            s.type === "ohv" ||
-            s.type === "private"
-        );
-        const existingNames = new Set(sites.map((s) => s.name.toLowerCase()));
-        curatedExtra.forEach((c) => {
-          if (!existingNames.has(c.name.toLowerCase())) {
-            sites.push(c);
-          }
-        });
-      }
-
-      if (activityFilter === "ohv") {
-        sites = sites.filter(
-          (s) =>
-            s.ohvFriendly ||
-            s.type === "ohv" ||
-            (s.activities || []).some(
-              (a) => a.toLowerCase().includes("ohv") || a.toLowerCase().includes("4x4")
-            )
-        );
-      }
+      sites = mergeCurated(sites, state, activityFilter);
 
       return NextResponse.json({
         source: "ridb",
@@ -79,10 +62,62 @@ export async function GET(req: NextRequest) {
         sites,
       });
     } catch (err) {
-      console.error("RIDB search failed, falling back to mock:", err);
+      console.error("RIDB search failed, trying Recreation.gov public API:", err);
     }
   }
 
+  // ── Path B: Recreation.gov public search (no key) ──────────────────────
+  try {
+    const center = STATE_SEARCH_CENTERS[state];
+    const { results, total } = await searchRecGovCampgrounds({
+      state,
+      query,
+      limit: Math.min(limit, 50),
+      lat: lat ? Number(lat) : center?.lat,
+      lng: lng ? Number(lng) : center?.lng,
+      radius: lat && lng ? radius : center?.radius,
+    });
+
+    let sites: CampSite[] = results
+      .filter((r) => r.latitude && r.longitude)
+      .map(mapRecGovToCampSite);
+
+    sites = mergeCurated(sites, state, activityFilter);
+
+    if (query) {
+      const q = query.toLowerCase();
+      // Keep rec.gov results (already queried); filter curated extras only was done in merge
+      sites = sites.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          (s.mustSees || []).some((m) => m.toLowerCase().includes(q)) ||
+          (s.activities || []).some((a) => a.toLowerCase().includes(q)) ||
+          s.dataSource === "ridb" // rec.gov path already matched
+      );
+      // If filter emptied rec.gov hits, re-include them (query already applied server-side)
+      if (sites.length === 0) {
+        sites = results.filter((r) => r.latitude && r.longitude).map(mapRecGovToCampSite);
+        sites = mergeCurated(sites, state, activityFilter);
+      }
+    }
+
+    return NextResponse.json({
+      source: "recreation.gov",
+      state,
+      total,
+      count: sites.length,
+      sites,
+      message:
+        state === "GA"
+          ? "Live federal campgrounds via Recreation.gov, plus curated dispersed / WMA / OHV / private nature stays for Georgia."
+          : "Live federal campgrounds via Recreation.gov for this area. Curated dispersed coverage is currently strongest for Georgia.",
+    });
+  } catch (err) {
+    console.error("Recreation.gov search failed:", err);
+  }
+
+  // ── Path C: curated Georgia fallback ───────────────────────────────────
   let sites = state === "GA" ? [...mockSites] : [];
 
   if (query) {
@@ -96,13 +131,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (activityFilter === "ohv") {
-    sites = sites.filter((s) => s.ohvFriendly || s.type === "ohv");
-  } else if (activityFilter === "dispersed") {
-    sites = sites.filter((s) => s.type === "dispersed" || s.type === "wma");
-  } else if (activityFilter === "private") {
-    sites = sites.filter((s) => s.type === "private");
-  }
+  sites = applyActivity(sites, activityFilter);
 
   return NextResponse.json({
     source: "mock",
@@ -110,12 +139,59 @@ export async function GET(req: NextRequest) {
     total: sites.length,
     count: sites.length,
     sites,
-    message: process.env.RIDB_API_KEY
-      ? "RIDB call failed – showing curated data"
-      : state === "GA"
-      ? "No RIDB_API_KEY yet – showing curated Georgia data (NF + dispersed + WMAs + OHV + private nature stays). Drop the key in .env.local and restart for live federal results."
-      : `No RIDB_API_KEY and no curated set for ${state} yet. Add the free key from ridb.recreation.gov to search federal lands nationwide.`,
+    message:
+      state === "GA"
+        ? "Live federal search was unavailable — showing curated Georgia data."
+        : `Live federal search was unavailable and there is no curated set for ${state} yet. Try again shortly.`,
   });
+}
+
+function mergeCurated(
+  sites: CampSite[],
+  state: string,
+  activityFilter: string
+): CampSite[] {
+  if (state === "GA") {
+    const curatedExtra = mockSites.filter(
+      (s) =>
+        s.type === "dispersed" ||
+        s.type === "wma" ||
+        s.type === "ohv" ||
+        s.type === "private" ||
+        s.dataSource === "curated"
+    );
+    const existingNames = new Set(sites.map((s) => s.name.toLowerCase()));
+    const existingIds = new Set(sites.map((s) => s.id));
+    curatedExtra.forEach((c) => {
+      if (!existingNames.has(c.name.toLowerCase()) && !existingIds.has(c.id)) {
+        sites.push(c);
+      }
+    });
+  }
+  return applyActivity(sites, activityFilter);
+}
+
+function applyActivity(sites: CampSite[], activityFilter: string): CampSite[] {
+  if (activityFilter === "ohv") {
+    return sites.filter(
+      (s) =>
+        s.ohvFriendly ||
+        s.type === "ohv" ||
+        (s.activities || []).some(
+          (a) => a.toLowerCase().includes("ohv") || a.toLowerCase().includes("4x4")
+        )
+    );
+  }
+  if (activityFilter === "dispersed") {
+    return sites.filter((s) => s.type === "dispersed" || s.type === "wma");
+  }
+  if (activityFilter === "private") {
+    return sites.filter((s) => s.type === "private");
+  }
+  if (activityFilter === "developed") {
+    return sites.filter((s) => s.type === "developed" || s.type === "state");
+  }
+  return sites;
 }
 
 function inferLandManager(f: {
@@ -123,7 +199,9 @@ function inferLandManager(f: {
   [key: string]: unknown;
 }): CampSite["landManager"] {
   const org = String(
-    (f as any).OrgName || (f as any).OrganizationName || ""
+    (f as { OrgName?: string; OrganizationName?: string }).OrgName ||
+      (f as { OrganizationName?: string }).OrganizationName ||
+      ""
   ).toLowerCase();
   if (org.includes("forest") || org.includes("usfs")) return "USFS";
   if (org.includes("national park") || org.includes("nps")) return "NPS";

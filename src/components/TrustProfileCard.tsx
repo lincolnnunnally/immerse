@@ -43,13 +43,32 @@ export const EXAMPLE_GUEST_PROFILE: TrustProfile = {
   memberSince: "2025",
 };
 
-export function TrustProfileCard({ profile }: { profile: TrustProfile }) {
+export function TrustProfileCard({
+  profile,
+  example = false,
+}: {
+  profile: TrustProfile;
+  /** When true, clearly mark as UI sample (DC-1: not real reputation). */
+  example?: boolean;
+}) {
   return (
-    <div className="rounded-2xl border border-forest-100 bg-white p-5 shadow-sm">
+    <div
+      className={`rounded-2xl border p-5 shadow-sm ${
+        example
+          ? "border-dashed border-forest-300 bg-forest-50/50"
+          : "border-forest-100 bg-white"
+      }`}
+    >
+      {example && (
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 mb-3">
+          Example only — not a real host or guest score
+        </p>
+      )}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-forest-500">
             {profile.role === "host" ? "Host" : "Guest"}
+            {example ? " (sample)" : ""}
           </p>
           <h3 className="font-semibold text-forest-900 text-lg">{profile.displayName}</h3>
           {profile.memberSince && (

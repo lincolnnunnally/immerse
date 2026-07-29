@@ -119,8 +119,8 @@ export default function TrustPage() {
           </div>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
-          <TrustProfileCard profile={EXAMPLE_HOST_PROFILE} />
-          <TrustProfileCard profile={EXAMPLE_GUEST_PROFILE} />
+          <TrustProfileCard profile={EXAMPLE_HOST_PROFILE} example />
+          <TrustProfileCard profile={EXAMPLE_GUEST_PROFILE} example />
         </div>
       </section>
 

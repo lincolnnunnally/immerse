@@ -2,25 +2,57 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getSiteById } from "@/lib/mock-sites";
 import { BOOKING_POLICY, buildAgreedRules } from "@/lib/booking";
 import { DEFAULT_NATURE_EXPECTATIONS, WILDLIFE_PROTECTION_RULE } from "@/lib/trust";
+import { createImmerseClient } from "@/lib/supabase";
+import type { CampSite } from "@/lib/types";
 
 export default function BookPage() {
   const params = useParams();
   const siteId = String(params.siteId || "");
-  const site = getSiteById(siteId);
+  const [site, setSite] = useState<CampSite | null | undefined>(undefined);
 
   const [arrival, setArrival] = useState("");
   const [nights, setNights] = useState(2);
   const [guests, setGuests] = useState(2);
+  const [email, setEmail] = useState("");
   const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [platformOk, setPlatformOk] = useState(false);
   const [noSideContractOk, setNoSideContractOk] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const curated = getSiteById(siteId);
+    if (curated) {
+      setSite(curated);
+      return;
+    }
+    // Live federal / other — fetch via search detail isn't needed for private-only flow
+    fetch(`/api/site/${encodeURIComponent(siteId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setSite(data?.site ?? null))
+      .catch(() => setSite(null));
+  }, [siteId]);
+
+  useEffect(() => {
+    const sb = createImmerseClient();
+    sb?.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setEmail(data.user.email);
+    });
+  }, []);
 
   const rules = useMemo(() => (site ? buildAgreedRules(site) : []), [site]);
+
+  if (site === undefined) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center text-forest-500">Loading…</div>
+    );
+  }
 
   if (!site) {
     return (
@@ -39,7 +71,8 @@ export default function BookPage() {
         <h1 className="text-2xl font-bold text-forest-900 mb-3">Public land</h1>
         <p className="text-forest-700 mb-6">
           This place is on public land. There is no private host contract — follow the pass,
-          parking, and stay rules on the site page (and official agency rules).
+          parking, and stay rules on the site page (and official agency rules). Reserve on
+          Recreation.gov when required.
         </p>
         <Link
           href={`/site/${site.id}`}
@@ -51,28 +84,66 @@ export default function BookPage() {
     );
   }
 
+  const isExample =
+    site.dataSource === "private_host" || site.id.startsWith("private-");
+
   const allRulesChecked = rules.every((_, i) => checked[i]);
-  const canConfirm = Boolean(arrival) && allRulesChecked && platformOk && noSideContractOk;
+  const canConfirm =
+    Boolean(arrival) &&
+    Boolean(email.includes("@")) &&
+    allRulesChecked &&
+    platformOk &&
+    noSideContractOk &&
+    !busy;
 
   function toggleRule(i: number) {
     setChecked((prev) => ({ ...prev, [i]: !prev[i] }));
   }
 
-  function handleConfirm() {
-    if (!canConfirm) return;
-    setSubmitted(true);
+  async function handleConfirm() {
+    if (!canConfirm || !site) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/stay-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siteId: site.id,
+          siteName: site.name,
+          arrival,
+          nights,
+          guests,
+          email: email.trim().toLowerCase(),
+          agreedRules: rules,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Could not save your interest. Try again.");
+        return;
+      }
+      setRequestId(data.id || null);
+      setSubmitted(true);
+    } catch {
+      setError("Could not save your interest. Try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (submitted) {
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-forest-900 mb-3">Agreement locked</h1>
+        <h1 className="text-2xl font-bold text-forest-900 mb-3">Interest recorded</h1>
         <p className="text-forest-700 mb-2">
-          Your stay rules for <strong>{site.name}</strong> are recorded in Immerse — including the
-          wildlife protection commitment.
+          Your interest for <strong>{site.name}</strong> is saved
+          {requestId ? ` (#${requestId.slice(0, 8)})` : ""}.
         </p>
         <p className="text-sm text-forest-600 mb-8">
-          Payment will plug in here next. The host cannot add new contracts after this point.
+          {isExample
+            ? "This was an example listing. Private stays are not bookable for payment yet — we will use your interest when hosts go live. No money was charged."
+            : "The host will review when the listing is live. Payment is not enabled until hosts are fulfilled on-platform."}
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link
@@ -82,10 +153,10 @@ export default function BookPage() {
             Back to site
           </Link>
           <Link
-            href="/policy/severe-abuse"
+            href="/host"
             className="inline-flex px-5 py-2.5 rounded-full border border-forest-300 text-forest-800 font-medium"
           >
-            Severe abuse policy
+            Become a host
           </Link>
         </div>
       </div>
@@ -101,11 +172,22 @@ export default function BookPage() {
         ← {site.name}
       </Link>
 
-      <h1 className="text-2xl font-bold text-forest-900 mb-1">Request this nature stay</h1>
-      <p className="text-forest-600 text-sm mb-8">
-        Everything you must agree to is on this screen — before any payment. No surprise contracts
-        afterward.
+      <h1 className="text-2xl font-bold text-forest-900 mb-1">
+        {isExample ? "Express interest in this nature stay" : "Request this nature stay"}
+      </h1>
+      <p className="text-forest-600 text-sm mb-4">
+        Everything you must agree to is on this screen.{" "}
+        {isExample
+          ? "Example listings are not live hosts — this records interest only. No payment."
+          : "No payment until hosts are live and fulfillment works."}
       </p>
+
+      {isExample && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <strong>Example listing.</strong> Not a real bookable host. Interest helps us launch
+          private nature stays the right way.
+        </div>
+      )}
 
       <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
         <p className="font-semibold mb-1">Platform promise</p>
@@ -121,7 +203,18 @@ export default function BookPage() {
       </div>
 
       <section className="mb-8 space-y-4">
-        <h2 className="font-semibold text-forest-900">Dates</h2>
+        <h2 className="font-semibold text-forest-900">Dates & contact</h2>
+        <label className="block text-sm">
+          <span className="text-forest-600">Email</span>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-forest-200 px-3 py-2"
+            placeholder="you@email.com"
+          />
+        </label>
         <label className="block text-sm">
           <span className="text-forest-600">Arrival</span>
           <input
@@ -157,7 +250,7 @@ export default function BookPage() {
         </div>
         {site.campingFee && (
           <p className="text-sm text-forest-700">
-            Listed rate: <strong>{site.campingFee}</strong> (payment integration next)
+            Listed rate: <strong>{site.campingFee}</strong> (not charged here)
           </p>
         )}
       </section>
@@ -209,7 +302,15 @@ export default function BookPage() {
             className="mt-1"
           />
           <span>
-            I agree to Immerse platform terms, Trust & Care, and the{" "}
+            I agree to Immerse{" "}
+            <Link href="/terms" className="underline">
+              Terms
+            </Link>
+            ,{" "}
+            <Link href="/trust" className="underline">
+              Trust & Care
+            </Link>
+            , and the{" "}
             <Link href="/policy/severe-abuse" className="underline">
               severe abuse policy
             </Link>
@@ -230,17 +331,17 @@ export default function BookPage() {
         </label>
       </section>
 
+      {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+
       <button
         type="button"
         disabled={!canConfirm}
         onClick={handleConfirm}
         className={`w-full py-3.5 rounded-full font-semibold text-white transition ${
-          canConfirm
-            ? "bg-forest-700 hover:bg-forest-800"
-            : "bg-forest-300 cursor-not-allowed"
+          canConfirm ? "bg-forest-700 hover:bg-forest-800" : "bg-forest-300 cursor-not-allowed"
         }`}
       >
-        Lock agreement (payment next)
+        {busy ? "Saving…" : isExample ? "Record interest (no payment)" : "Submit request (no payment)"}
       </button>
 
       <p className="mt-4 text-xs text-center text-forest-500">

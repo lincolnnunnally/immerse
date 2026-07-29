@@ -2,67 +2,53 @@
 
 **The easy way to find and plan nature immersion camping trips.**
 
-Unified search for federal, state, private, and dispersed sites — with the information that actually matters:
+Live: **https://immerse.unitedundergod.org**
 
-- Drive time from your location
-- Hike-in distance & elevation
-- Passes required (America the Beautiful, park-specific, none)
-- Parking fees / day-use rules
-- Reservation status & windows
-- Must-see highlights nearby
-- Simple day-by-day itinerary
+## What works now
 
-Built to remove the friction that stops people from getting into nature.
+- Live federal campground search via Recreation.gov public API (no key required)
+- Optional RIDB key for richer federal inventory when set
+- Georgia curated enrichment (dispersed, WMA, OHV, example private nature stays)
+- Site detail for curated **and** numeric federal IDs
+- Availability summaries for Recreation.gov campgrounds
+- Shared LPL accounts, saved trips, password recovery request
+- Adventure videos (YouTube links) + park/manager partner interest
+- Privacy + Terms; honest copy on example private listings
 
-## Why Immerse exists
+## Tech
 
-Existing tools (Recreation.gov, ReserveAmerica, state apps, Forest Service sites) are fragmented, confusing, and leave you guessing about the practical details. Immerse solves that by putting clarity first.
+- Next.js 15 (App Router) + TypeScript + Tailwind
+- Shared LPL Supabase (`immerse_*` tables)
+- Vercel + `immerse.unitedundergod.org`
 
-## Current Status (MVP)
-
-- Search focused on Southeast / Georgia (Chattahoochee-Oconee National Forest + nearby) to start
-- Clear info cards for every site
-- Basic itinerary builder
-- Ready for RIDB (federal) data integration
-- Map-ready architecture
-
-## Tech Stack
-
-- Next.js 15 (App Router) + TypeScript
-- Tailwind CSS + shadcn/ui patterns
-- Mapbox GL (or Leaflet fallback)
-- RIDB API + Recreation.gov public availability endpoints
-- Vercel deployment ready
-
-## Getting Started
+## Local
 
 ```bash
-git clone https://github.com/lincolnnunnally/immerse.git
-cd immerse
 npm install
 cp .env.example .env.local
-# Add your RIDB API key and Mapbox token
+# Required for accounts: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+# Optional: RIDB_API_KEY, NEXT_PUBLIC_MAPBOX_TOKEN
 npm run dev
 ```
 
-### Required API Keys
+## Optional env
 
-1. **RIDB API Key** (free): https://ridb.recreation.gov → sign up → generate key
-2. **Mapbox Access Token** (free tier): https://account.mapbox.com
+| Var | Purpose |
+|-----|---------|
+| `RIDB_API_KEY` | Free federal RIDB API (preferred when present) |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Future maps / real drive times |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL (production: https://immerse.unitedundergod.org) |
 
 ## Roadmap
 
-- [x] Project scaffold & vision
-- [ ] Live RIDB search + availability
-- [ ] Full pass / parking / hike-in enrichment
-- [ ] AI itinerary generation
-- [ ] Cancellation alerts
-- [ ] PWA / offline support
-- [ ] Broader national coverage
-
-## Contributing
-
-This is being built to solve a real personal pain point. Feedback and ideas welcome.
+- [x] Live federal search without requiring a key (Recreation.gov)
+- [x] Site detail for live federal IDs
+- [x] Adventure YouTube posts + park partner interest
+- [x] Privacy / Terms / honest private-stay framing
+- [ ] Map + drive-from-me
+- [ ] Full pass / parking enrichment beyond facility defaults
+- [ ] Live private hosts + payments only after fulfillment proven
+- [ ] Paid park marketing campaigns (after partner agreements)
 
 ---
 
