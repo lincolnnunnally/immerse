@@ -35,6 +35,8 @@ const publicSites: CampSite[] = [
       "Popular developed campground with easy access to a beautiful double waterfall. Great first trip into the mountains — short hike to the falls right from the area.",
     notes: "Fills quickly on weekends. Book early or aim for mid-week. Senior/Access passes often get camping discounts.",
     activities: ["Camping", "Hiking", "Waterfall viewing"],
+    imageUrl:
+      "https://cdn.recreation.gov/public/2019/12/31/14/45/240242_102f6da6-d28b-4493-90e9-00898ef7b466_700.webp",
     dataSource: "curated",
     status: "open",
     access: "any_vehicle",
@@ -70,6 +72,8 @@ const publicSites: CampSite[] = [
     description:
       "Quiet 17-site campground at the junction of Tallulah River and Tate Branch. Includes walk-in tent sites for a more rustic feel while still having basic facilities.",
     activities: ["Camping", "Fishing", "Hiking"],
+    imageUrl:
+      "https://cdn.recreation.gov/public/2024/03/31/16/07/10309540_dfb0e6c8-24ec-477d-b51c-8f06a50a45e0_1440.webp",
     dataSource: "curated",
     status: "open",
     access: "any_vehicle",
@@ -105,6 +109,8 @@ const publicSites: CampSite[] = [
     description:
       "19-site developed campground near the headwaters of the Chattahoochee. Short walking trail to Horse Trough Falls right from the back of the campground. Beautiful mountain approach.",
     activities: ["Camping", "Hiking", "Waterfall viewing"],
+    imageUrl:
+      "https://cdn.recreation.gov/public/2024/06/18/15/13/10309362_75a79690-ff4f-4e8b-9b7b-4721d81761ba_1440.webp",
     dataSource: "curated",
     status: "open",
     access: "any_vehicle",
@@ -140,6 +146,8 @@ const publicSites: CampSite[] = [
     description:
       "Peaceful streamside campground only about 15 minutes from the alpine village of Helen. Good balance of nature immersion and convenience.",
     activities: ["Camping", "Hiking"],
+    imageUrl:
+      "https://cdn.recreation.gov/public/2024/06/18/15/51/10309337_163d7ac2-015e-444f-9dec-340aad679acb_1440.webp",
     dataSource: "curated",
     status: "open",
     access: "any_vehicle",
@@ -169,6 +177,8 @@ const publicSites: CampSite[] = [
     description:
       "42-site campground on Lake Russell with both tent and RV options. Reservation only. Good for families who want water access without a long drive into the high mountains.",
     activities: ["Camping", "Fishing", "Boating", "Swimming"],
+    imageUrl:
+      "https://cdn.recreation.gov/public/2023/06/07/17/39/273781_3d55b312-09bb-4503-9a7e-447071347fe0_700.webp",
     dataSource: "curated",
     status: "open",
     access: "any_vehicle",
@@ -198,6 +208,8 @@ const publicSites: CampSite[] = [
     description:
       "Smaller developed campground on Rock Creek in the Ed Jenkins National Recreation Area. Affordable and peaceful — good mid-week escape.",
     activities: ["Camping", "Fishing", "Hiking"],
+    imageUrl:
+      "https://cdn.recreation.gov/public/2022/10/16/15/45/10203811_caeff718-c919-43bc-924d-7f2eb99bf3e3_700.webp",
     dataSource: "curated",
     status: "seasonal",
     access: "any_vehicle",

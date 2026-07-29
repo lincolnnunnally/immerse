@@ -85,21 +85,10 @@ export async function GET(req: NextRequest) {
     sites = mergeCurated(sites, state, activityFilter);
 
     if (query) {
-      const q = query.toLowerCase();
-      // Keep rec.gov results (already queried); filter curated extras only was done in merge
-      sites = sites.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.description.toLowerCase().includes(q) ||
-          (s.mustSees || []).some((m) => m.toLowerCase().includes(q)) ||
-          (s.activities || []).some((a) => a.toLowerCase().includes(q)) ||
-          s.dataSource === "ridb" // rec.gov path already matched
-      );
-      // If filter emptied rec.gov hits, re-include them (query already applied server-side)
-      if (sites.length === 0) {
-        sites = results.filter((r) => r.latitude && r.longitude).map(mapRecGovToCampSite);
-        sites = mergeCurated(sites, state, activityFilter);
-      }
+      sites = rankAndFilterByQuery(sites, query, results);
+    } else {
+      // Prefer listings with photos so the feed feels inviting
+      sites = [...sites].sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)));
     }
 
     return NextResponse.json({
@@ -121,14 +110,9 @@ export async function GET(req: NextRequest) {
   let sites = state === "GA" ? [...mockSites] : [];
 
   if (query) {
-    const q = query.toLowerCase();
-    sites = sites.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
-        (s.mustSees || []).some((m) => m.toLowerCase().includes(q)) ||
-        (s.activities || []).some((a) => a.toLowerCase().includes(q))
-    );
+    sites = rankAndFilterByQuery(sites, query, []);
+  } else {
+    sites = [...sites].sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)));
   }
 
   sites = applyActivity(sites, activityFilter);
@@ -144,6 +128,61 @@ export async function GET(req: NextRequest) {
         ? "Live federal search was unavailable — showing curated Georgia data."
         : `Live federal search was unavailable and there is no curated set for ${state} yet. Try again shortly.`,
   });
+}
+
+/** Token match so "beautiful waterfalls" hits Desoto Falls / waterfall hikes. */
+function rankAndFilterByQuery(
+  sites: CampSite[],
+  query: string,
+  recgovResults: { entity_id?: string }[]
+): CampSite[] {
+  const tokens = query
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 2 && !["the", "and", "for", "with", "near", "best"].includes(t));
+  // synonym boosts
+  const expanded = new Set(tokens);
+  if (tokens.some((t) => t.startsWith("waterfall") || t === "falls" || t === "cascade")) {
+    expanded.add("waterfall");
+    expanded.add("falls");
+    expanded.add("cascade");
+  }
+  const liveIds = new Set(recgovResults.map((r) => String(r.entity_id)));
+
+  const scored = sites.map((s) => {
+    const hay = [
+      s.name,
+      s.description,
+      s.agency,
+      ...(s.mustSees || []),
+      ...(s.activities || []),
+      ...(s.amenities || []),
+      s.notes || "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    let score = 0;
+    for (const t of expanded) {
+      if (hay.includes(t)) score += t === "waterfall" || t === "falls" ? 3 : 1;
+      if (s.name.toLowerCase().includes(t)) score += 2;
+    }
+    if (s.imageUrl) score += 1.5;
+    // rec.gov search already scoped by q — keep those even if token miss on short names
+    if (liveIds.has(s.id) || s.dataSource === "ridb") score += 0.5;
+    return { s, score };
+  });
+
+  let kept = scored.filter((x) => x.score > 0);
+  if (kept.length === 0) {
+    // Fall back: keep rec.gov hits + any curated with photo
+    kept = scored.filter(
+      (x) => liveIds.has(x.s.id) || x.s.dataSource === "ridb" || Boolean(x.s.imageUrl)
+    );
+  }
+  if (kept.length === 0) kept = scored;
+
+  kept.sort((a, b) => b.score - a.score);
+  return kept.map((x) => x.s);
 }
 
 function mergeCurated(

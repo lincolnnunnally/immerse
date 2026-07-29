@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CampSite } from "@/lib/types";
 import { headers } from "next/headers";
 import { SitesMap } from "@/components/SitesMap";
+import { SitePhoto } from "@/components/SitePhoto";
 import { hasValidCoords } from "@/lib/maps";
 
 const STATES = [
@@ -117,6 +118,7 @@ function SiteCard({ site }: { site: CampSite }) {
       href={`/site/${site.id}`}
       className="block bg-white rounded-2xl border border-forest-100 shadow-sm hover:shadow-md hover:border-forest-300 transition overflow-hidden"
     >
+      <SitePhoto src={site.imageUrl} alt={site.name} variant="card" />
       <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-2">
           <h2 className="font-semibold text-lg text-forest-900 leading-snug">

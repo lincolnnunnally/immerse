@@ -7,6 +7,7 @@ import { SaveTripButton } from "@/components/SaveTripButton";
 import { EXAMPLE_HOST_PROFILE, TrustProfileCard } from "@/components/TrustProfileCard";
 import { SitesMap } from "@/components/SitesMap";
 import { DirectionsLinks } from "@/components/DirectionsLinks";
+import { SitePhoto } from "@/components/SitePhoto";
 import { hasValidCoords } from "@/lib/maps";
 
 function accessLabel(access?: string) {
@@ -106,6 +107,15 @@ export default async function SitePage({
       </div>
       <h1 className="text-3xl font-bold text-forest-900 mb-1">{site.name}</h1>
       {site.agency && <p className="text-forest-600 mb-4">{site.agency}</p>}
+
+      <div className="mb-6 rounded-2xl overflow-hidden border border-forest-100 shadow-sm">
+        <SitePhoto src={site.imageUrl} alt={site.name} variant="hero" />
+        {site.imageUrl && (
+          <p className="text-[11px] text-forest-500 px-3 py-1.5 bg-forest-50 border-t border-forest-100">
+            Photo from Recreation.gov / managing agency. Confirm current conditions before you go.
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-3 mb-8">
         <SaveTripButton site={site} />

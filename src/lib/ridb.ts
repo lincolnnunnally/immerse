@@ -168,6 +168,13 @@ export function mapFacilityToCampSite(f: RIDBFacility): import("./types").CampSi
   const id = String(f.FacilityID);
   const reservable = f.Reservable === true || String(f.FacilityReservationURL || "").includes("recreation.gov");
 
+  // RIDB full payloads sometimes include MEDIA; otherwise UI falls back to placeholder
+  // until Recreation.gov search path (or a media fetch) supplies preview_image_url.
+  const media = (f as { MEDIA?: { URL?: string; MediaType?: string }[] }).MEDIA;
+  const photo =
+    media?.find((m) => m.URL && String(m.MediaType || "").toLowerCase().includes("image"))?.URL ||
+    media?.find((m) => m.URL)?.URL;
+
   return {
     id,
     name: f.FacilityName || "Unnamed Facility",
@@ -185,6 +192,7 @@ export function mapFacilityToCampSite(f: RIDBFacility): import("./types").CampSi
     mustSees: [],
     description: stripHtml(f.FacilityDescription || ""),
     notes: f.StayLimit ? `Stay limit: ${f.StayLimit}` : undefined,
+    imageUrl: photo || undefined,
   };
 }
 
