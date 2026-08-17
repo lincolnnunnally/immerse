@@ -11,15 +11,35 @@ type Props = {
   className?: string;
 };
 
+/**
+ * NPS serves its structured_data photos at full print resolution — the Little River
+ * Canyon hero is 4.6 MB. It honours ?maxwidth, which brings that to ~370 KB. Worth it:
+ * people load these pages on phones with one bar of service at a trailhead.
+ */
+function sizedSrc(src: string, variant: "card" | "hero"): string {
+  try {
+    const u = new URL(src);
+    if (u.hostname.endsWith("nps.gov") && !u.searchParams.has("maxwidth")) {
+      u.searchParams.set("maxwidth", variant === "hero" ? "1200" : "800");
+      u.searchParams.set("autorotate", "false");
+      return u.toString();
+    }
+  } catch {
+    /* relative or malformed — leave it alone */
+  }
+  return src;
+}
+
 export function SitePhoto({ src, alt, variant = "card", className = "" }: Props) {
   const height = variant === "hero" ? "h-56 sm:h-72 md:h-80" : "h-40 sm:h-44";
 
   if (src) {
+    const finalSrc = sizedSrc(src, variant);
     return (
       <div className={`relative w-full ${height} overflow-hidden bg-forest-100 ${className}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={src}
+          src={finalSrc}
           alt={alt}
           className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
