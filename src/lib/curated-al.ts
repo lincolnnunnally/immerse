@@ -1,4 +1,190 @@
-import type { CampSite } from "./types";
+import type { CampSite, Jurisdiction, LandRule, VerifyContact } from "./types";
+
+/**
+ * Little River Canyon is the case that taught us not to state land rules as flat fact.
+ *
+ * Four official sources answer "can I camp here?" and they do not read the same way:
+ *   • The park's camping page (2021)  — "Camping is currently not permitted."
+ *   • Laws & Policies (Dec 2025)      — "Camping is not permitted."
+ *   • The Superintendent's Compendium (signed 05/27/2026, the NEWEST and legally
+ *     authoritative document) — literally reads "Camping is not prohibited within the
+ *     Little River Canyon National Preserve", with the justification "To protect the
+ *     visitors and the resources within the preserve." That sentence contradicts its own
+ *     justification and is almost certainly a dropped-word drafting error.
+ *   • The nps.gov interactive map appears to show camping symbols, and the static map
+ *     hosted there is an Alabama DCNR hunting map whose generic legend includes
+ *     "CAMP OR LODGE" — its only camp symbol sits on DeSoto State Park, outside the preserve.
+ *
+ * The preserve is ALSO Little River Wildlife Management Area (13,100 acres, co-managed
+ * with Alabama DCNR), and the WMA is larger than the federal holding — so two rule-sets
+ * really do cover this ground. They happen to agree: federal law bars camping outside
+ * designated sites (36 CFR 2.10(b)(10)) and none are designated, while Alabama's WMA rule
+ * bars camping "except in designated sites" and this WMA designates none.
+ *
+ * So the answer is "no camping" — but we show the reader every source and its date rather
+ * than asserting it, because the newest federal document can be read the other way.
+ * Verified 2026-08-17 by fetching raw page HTML (not summaries — a one-word inversion is
+ * exactly what a summariser gets wrong).
+ */
+
+const LIRI_JURISDICTIONS: Jurisdiction[] = [
+  {
+    name: "National Park Service — Little River Canyon National Preserve",
+    role: "Owns and regulates the federal land (11,042 of the 15,288 authorized acres)",
+    url: "https://www.nps.gov/liri/index.htm",
+  },
+  {
+    name: "Alabama DCNR — Wildlife & Freshwater Fisheries",
+    role: "Sets hunting rules across Little River WMA (13,100 acres), which overlays the preserve's backcountry and extends onto non-federal land",
+    url: "https://www.outdooralabama.com/",
+  },
+  {
+    name: "Forever Wild Land Trust / Alabama State Parks",
+    role: "Own inholdings inside the WMA boundary — named as cooperators on the WMA permit",
+  },
+];
+
+const LIRI_VERIFY: VerifyContact[] = [
+  {
+    label: "Preserve headquarters (the authority on what's allowed)",
+    phone: "256-845-9605",
+    url: "https://www.nps.gov/liri/learn/management/compedium.htm",
+    note: "— ask specifically about camping; the compendium wording is ambiguous",
+  },
+  {
+    label: "Current closures & conditions",
+    url: "https://www.nps.gov/liri/planyourvisit/conditions.htm",
+  },
+  {
+    label: "Alabama WMA hunting rules (state side)",
+    url: "https://www.outdooralabama.com/wildlife-management-areas",
+  },
+];
+
+const LIRI_RULES: LandRule[] = [
+  {
+    activity: "Camping",
+    status: "prohibited",
+    authority: "National Park Service — 36 CFR 2.10",
+    detail:
+      "Federal law is the backstop that settles this regardless of how the park's own wording reads: 36 CFR 2.10(a) lets a superintendent designate camping sites, and 2.10(b)(10) prohibits “camping outside of designated sites or areas.” Little River Canyon has designated no sites and operates no campground, so camping is prohibited by regulation.",
+    sourceUrl: "https://www.law.cornell.edu/cfr/text/36/2.10",
+    sourceKind: "Federal regulation (36 CFR)",
+    confidence: "likely",
+    caveat:
+      "Read from the Cornell LII mirror — ecfr.gov was unreachable, so the exact current revision date could not be captured.",
+  },
+  {
+    activity: "Camping",
+    status: "prohibited",
+    authority: "National Park Service — Superintendent's Compendium",
+    detail:
+      "The decisive current restriction is the night closure, not the camping paragraph: the compendium closes the preserve's non-gated parking lots, overlooks and backcountry roads during hours of darkness (30 min before sunrise to 30 min after sunset), with exceptions ONLY for licensed night hunting of raccoon, opossum and fox, and for fishing. There is no overnight-stay exception, which forecloses camping.",
+    sourceUrl: "https://www.nps.gov/liri/learn/management/compedium.htm",
+    sourceKind: "Superintendent's Compendium (signed 05/27/2026)",
+    sourceDate: "July 7, 2026",
+    confidence: "verified",
+    caveat:
+      "Heads up: this same document's § 2.10 paragraph literally reads “Camping is not prohibited within the Little River Canyon National Preserve” — while giving the justification “To protect the visitors and the resources within the preserve.” That is internally contradictory and reads like a dropped “not”. Do not treat it as permission; the night closure and 36 CFR 2.10 both point the other way. If you want to camp here, this is the ambiguity to raise on the phone.",
+  },
+  {
+    activity: "Camping",
+    status: "prohibited",
+    authority: "National Park Service — park camping page",
+    detail:
+      "The park states plainly: “Camping is currently not permitted at Little River Canyon National Preserve.” It points to DeSoto State Park (about 7 miles north, tent/RV/backcountry sites) and privately run campgrounds around Fort Payne instead.",
+    sourceUrl:
+      "https://www.nps.gov/liri/planyourvisit/camping-at-little-river-canyon-national-preserve.htm",
+    sourceKind: "Park web page",
+    sourceDate: "March 23, 2021",
+    confidence: "verified",
+    caveat: "Five years old — corroborated here by the 2026 compendium rather than relied on alone.",
+  },
+  {
+    activity: "Camping",
+    status: "prohibited",
+    authority: "Alabama DCNR — WMA Regulation 220-2-.55(1)(m)",
+    detail:
+      "The state side reaches the same answer independently. Alabama makes it unlawful “to camp on any AREA except in designated sites,” capped at 9 days in any 30-day period. The official 2026–2027 Little River WMA permit designates no campsites and its map legend carries no campground or campsite symbol — so the WMA overlay creates no camping right either, on federal or non-federal parts of the WMA.",
+    sourceUrl:
+      "https://www.outdooralabama.com/sites/default/files/WMAs/Rules-Regulations/Alabama%20Wildlife%20Management%20Areas%20Regulation%20220-2-.55.pdf",
+    sourceKind: "State regulation (Ala. Admin. Code 220-2-.55)",
+    confidence: "verified",
+    caveat: "The official PDF prints no revision date, so the in-force version could not be confirmed.",
+  },
+  {
+    activity: "Backcountry / primitive campsites (Slant Rock, Billy's Ford, Hartline Ford)",
+    status: "closed_temporarily",
+    authority: "National Park Service — park FAQ",
+    detail:
+      "These three primitive sites did once exist in the backcountry and are the likely reason older maps and guides still show camping here. NPS closed all of them: “Little River Canyon National Preserve has closed all backcountry campsites for health and safety reasons… the pit toilets at the sites are unserviceable… We do not have a date for opening new campsites at this time.” Separately, Slant Rock Road is currently closed to vehicles (hike or bike in).",
+    sourceUrl: "https://www.nps.gov/liri/faqs.htm",
+    sourceKind: "Park FAQ + conditions page",
+    sourceDate: "FAQ March 26, 2021; conditions May 28, 2026",
+    confidence: "verified",
+  },
+  {
+    activity: "Hunting (why this land is also a WMA)",
+    status: "conditional",
+    authority: "Alabama DCNR — Wildlife & Freshwater Fisheries",
+    detail:
+      "This is what the WMA designation is actually for. NPS manages the preserve's Backcountry Area as Little River Wildlife Management Area in cooperation with Alabama DCNR, Alabama State Parks and the Forever Wild Land Trust; the state sets the hunting rules and requires deer and turkey harvests to be reported within 48 hours. The WMA is a hunting-management overlay — not a separate campable parcel.",
+    conditions:
+      "Alabama hunting licence + WMA licence, plus the free area permit and a daily permit (or the Outdoor Alabama WMA check-in app). Hunter education required if born on or after 1977-08-01.",
+    sourceUrl: "https://www.nps.gov/liri/planyourvisit/hunting.htm",
+    sourceKind: "Park web page",
+    sourceDate: "May 28, 2026",
+    confidence: "verified",
+    caveat: "Licence fees change yearly and the official fee sheet is stale — confirm the price at purchase.",
+  },
+  {
+    activity: "Campfires",
+    status: "conditional",
+    authority: "National Park Service — Superintendent's Compendium",
+    detail:
+      "Fires are restricted to designated picnic-area fire rings and standing grills, using appropriate fuel. Fallen dead wood on the ground may be collected for those rings only; standing dead trees may not be cut, as they are habitat.",
+    conditions: "Designated fire rings / standing grills in picnic areas only",
+    sourceUrl: "https://www.nps.gov/liri/learn/management/compedium.htm",
+    sourceKind: "Superintendent's Compendium",
+    sourceDate: "July 7, 2026",
+    confidence: "verified",
+  },
+  {
+    activity: "Swimming",
+    status: "allowed",
+    authority: "National Park Service",
+    detail:
+      "Swimming and wading are a normal use here — Blue Hole, Little Falls and the pools below Little River Falls are the classic spots. You must stay 50 feet back from the brink of Little River Falls; that one is enforced, and people have died on the wet rock.",
+    sourceUrl: "https://www.nps.gov/liri/planyourvisit/waterfalls.htm",
+    sourceKind: "Park web page",
+    confidence: "verified",
+  },
+  {
+    activity: "Drones",
+    status: "prohibited",
+    authority: "National Park Service — Superintendent's Compendium",
+    detail:
+      "Launching, landing or operating unmanned aircraft anywhere in the preserve is prohibited without written approval from the superintendent.",
+    sourceUrl: "https://www.nps.gov/liri/learn/management/compedium.htm",
+    sourceKind: "Superintendent's Compendium",
+    sourceDate: "July 7, 2026",
+    confidence: "verified",
+  },
+  {
+    activity: "OHVs / ATVs",
+    status: "prohibited",
+    authority: "National Park Service",
+    detail:
+      "Off-highway vehicles — ATVs, UTVs and non-street-legal dirt bikes — are not allowed on any road in the preserve, including the 23 miles of backcountry WMA roads. Those roads are open to street-licensed 4WD vehicles, horses, bicycles and hikers, at an 11 mph limit.",
+    sourceUrl: "https://www.nps.gov/liri/planyourvisit/wildlife-management-area.htm",
+    sourceKind: "Park web page + compendium",
+    sourceDate: "July 29, 2022",
+    confidence: "verified",
+  },
+];
+
+const LIRI_RULES_SUMMARY =
+  "You cannot camp inside the preserve — but the official sources genuinely disagree, so here is all of it. Three NPS pages say camping is not permitted, and no campsites are designated, which is what makes it prohibited under 36 CFR 2.10. The catch: the newest and most authoritative document, the 2026 Superintendent's Compendium, literally reads “Camping is not prohibited” — with a justification that only makes sense for a prohibition. Its night closure of every lot and backcountry road settles it in practice. The preserve is also Little River Wildlife Management Area, and Alabama's WMA rule independently bars camping except in designated sites, of which this WMA has none. Camp at DeSoto State Park, 15 minutes north, and drive in.";
 
 /**
  * Northeast Alabama — Little River Canyon / Lookout Mountain.
@@ -97,6 +283,10 @@ export const alabamaSites: CampSite[] = [
       "Rules: no alcohol, no glass, no drones without a permit, dogs on a 6-ft leash, and stay 50 ft back from the falls edge (that one is law). The Falls lot fills by 11 AM on summer weekends. The Canyon Center and its overflow lot are closed Mondays — buy passes at the Rim of the Canyon Cafe across the street. Current closure: Slant Rock Road, no vehicle access (hike or bike in). Poor cell reception in the canyon; be out before dark; flash-flood risk after heavy rain. Verified against nps.gov/liri hours, fees, conditions and FAQ pages 2026-08-16.",
     imageUrl:
       "https://www.nps.gov/common/uploads/structured_data/3C870F95-1DD8-B71B-0B1A89976F5B3292.jpg",
+    rulesSummary: LIRI_RULES_SUMMARY,
+    landRules: LIRI_RULES,
+    jurisdictions: LIRI_JURISDICTIONS,
+    verifyWith: LIRI_VERIFY,
     dataSource: "curated",
     status: "open",
     access: "any_vehicle",
@@ -149,6 +339,10 @@ export const alabamaSites: CampSite[] = [
       "The 45-foot waterfall where the canyon begins, right at the AL-35 bridge — the easiest big payoff in the preserve. Free lot, restrooms, and an ADA boardwalk to the overlook. By late summer the flow drops and the ledges above and below the falls turn into wading and swimming pools; the Little Falls Trail drops 137 stone steps to a river-wide sandstone shelf that is the local favorite swim spot.",
     notes:
       "The lot is often full by 11 AM on late-spring and summer weekends and staff close it; the Canyon Center overflow lot is closed Mondays. Rocks are slippery and people have died here — stay 50 ft from the falls edge. Coordinates from USGS GNIS feature 150711. Verified nps.gov/liri 2026-08-16.",
+    rulesSummary: LIRI_RULES_SUMMARY,
+    landRules: LIRI_RULES,
+    jurisdictions: LIRI_JURISDICTIONS,
+    verifyWith: LIRI_VERIFY,
     imageUrl:
       "https://www.nps.gov/common/uploads/structured_data/8C825EA4-0C4E-1B2F-69AC99C5CBFF3679.jpg",
     dataSource: "curated",
@@ -195,6 +389,10 @@ export const alabamaSites: CampSite[] = [
       "The shady family end of the canyon, at its southern mouth near Cedar Bluff in Cherokee County — and the only fee area in the preserve. Easy river access, lots of shade, grills, and a flat one-mile trail along the water. Reach it from AL-273 onto Cherokee CR-275, or down 11 steep, winding miles from Eberhart Point (no trailers or RVs).",
     notes:
       "Summer hours 8 AM–7 PM Central. Many phone map apps call it “Canyon Mouth Picnic Area”. Bring cash as a backup for the fee machine. Coordinates from OpenStreetMap. Verified nps.gov hours/fees pages (updated May 2026).",
+    rulesSummary: LIRI_RULES_SUMMARY,
+    landRules: LIRI_RULES,
+    jurisdictions: LIRI_JURISDICTIONS,
+    verifyWith: LIRI_VERIFY,
     imageUrl:
       "https://www.nps.gov/common/uploads/structured_data/8C58A4FA-05FF-876E-05DD3F27CD0A3CB3.jpg",
     dataSource: "curated",

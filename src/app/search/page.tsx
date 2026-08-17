@@ -17,7 +17,12 @@ const STATES = [
 const FILTERS = [
   { key: "camping", label: "All" },
   { key: "developed", label: "Developed" },
-  { key: "dispersed", label: "Dispersed / WMA" },
+  // "Dispersed" and "WMA" are NOT the same thing — dispersed camping is broadly allowed on
+  // national forest land (typically 14 days, away from developed areas), while a state
+  // wildlife management area is a hunting overlay whose camping rules are set separately
+  // and are often designated-sites-only. Conflating them told users the wrong story.
+  { key: "dispersed", label: "Dispersed / primitive" },
+  { key: "wma", label: "WMA / wildlife area" },
   { key: "ohv", label: "OHV / 4x4" },
   { key: "private", label: "Private" },
 ] as const;

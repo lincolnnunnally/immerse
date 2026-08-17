@@ -55,6 +55,57 @@ export interface PrivateHostInfo {
   immersionRules: string[];
 }
 
+/**
+ * What a specific authority says about a specific activity on this ground.
+ *
+ * Public-land rules genuinely conflict between sources: a park's own web page can be
+ * five years stale while its signed regulatory compendium says something different, and
+ * the same acre can sit under two agencies at once (an NPS preserve that is also a state
+ * wildlife management area). We do not average those into one confident sentence. We show
+ * who says what, when they said it, and how to settle it.
+ */
+export type RuleStatus =
+  | "allowed"
+  | "prohibited"
+  | "conditional"
+  | "closed_temporarily"
+  | "unclear";
+
+export interface LandRule {
+  /** "Camping", "Dispersed camping", "Campfires", "Drones"… */
+  activity: string;
+  status: RuleStatus;
+  /** Who is speaking — "National Park Service", "Alabama DCNR (Wildlife & Freshwater Fisheries)" */
+  authority: string;
+  detail: string;
+  /** Permit / licence / season / stay limit that applies when status is conditional */
+  conditions?: string;
+  sourceUrl: string;
+  /** "Superintendent's Compendium", "state regulation", "park web page", "official map" */
+  sourceKind?: string;
+  /** As printed on the source — "July 7, 2026", "March 23, 2021" */
+  sourceDate?: string;
+  confidence?: "verified" | "likely" | "unverified";
+  /** Why this source is outranked, contradicts another, or shouldn't be leaned on */
+  caveat?: string;
+}
+
+/** An agency with authority over this ground. More than one is normal. */
+export interface Jurisdiction {
+  name: string;
+  /** What they control here — "Owns and regulates the land", "Sets hunting rules" */
+  role: string;
+  url?: string;
+}
+
+/** A way for a human to settle a rules question that the sources can't. */
+export interface VerifyContact {
+  label: string;
+  phone?: string;
+  url?: string;
+  note?: string;
+}
+
 export interface CampSite {
   id: string;
   name: string;
@@ -105,6 +156,16 @@ export interface CampSite {
   distanceMiles?: number;
   /** Nearby places worth pairing with this site (camp here → go there) */
   nearby?: { name: string; siteId?: string; minutes?: number; note?: string }[];
+
+  // ── What's actually allowed here ─────────────────────────────────────
+  /** Plain-language bottom line, written to survive the sources disagreeing */
+  rulesSummary?: string;
+  /** Per-authority, per-activity rules with their sources and dates */
+  landRules?: LandRule[];
+  /** Every agency with authority over this ground */
+  jurisdictions?: Jurisdiction[];
+  /** Who to call when the sources can't settle it */
+  verifyWith?: VerifyContact[];
 }
 
 export interface TripItinerary {

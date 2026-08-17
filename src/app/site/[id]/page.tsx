@@ -11,6 +11,7 @@ import { ScheduleTripPanel } from "@/components/ScheduleTripPanel";
 import { hasValidCoords } from "@/lib/maps";
 import { TripReadyPanel } from "@/components/TripReadyPanel";
 import { reservationSystemName } from "@/lib/reservation";
+import { LandRulesPanel } from "@/components/LandRulesPanel";
 
 function accessLabel(access?: string) {
   switch (access) {
@@ -208,6 +209,8 @@ export default async function SitePage({
       )}
 
       {hasValidCoords(site.lat, site.lng) && <TripReadyPanel site={site} />}
+
+      <LandRulesPanel site={site} />
 
       {site.nearby && site.nearby.length > 0 && (
         <section className="mb-8 rounded-2xl border border-forest-100 bg-white p-6 shadow-sm">

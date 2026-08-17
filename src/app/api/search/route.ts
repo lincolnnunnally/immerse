@@ -278,8 +278,14 @@ function applyActivity(sites: CampSite[], activityFilter: string): CampSite[] {
         )
     );
   }
+  // Dispersed camping (national forest / BLM style, no designated site) is a different
+  // thing from a state wildlife management area. Keep them as separate filters so we
+  // don't imply dispersed camping only happens on WMAs.
   if (activityFilter === "dispersed") {
-    return sites.filter((s) => s.type === "dispersed" || s.type === "wma");
+    return sites.filter((s) => s.type === "dispersed");
+  }
+  if (activityFilter === "wma") {
+    return sites.filter((s) => s.type === "wma");
   }
   if (activityFilter === "private") {
     return sites.filter((s) => s.type === "private");
