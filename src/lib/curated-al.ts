@@ -15,11 +15,16 @@ import type { CampSite, Jurisdiction, LandRule, VerifyContact } from "./types";
  *     hosted there is an Alabama DCNR hunting map whose generic legend includes
  *     "CAMP OR LODGE" — its only camp symbol sits on DeSoto State Park, outside the preserve.
  *
- * The preserve is ALSO Little River Wildlife Management Area (13,100 acres, co-managed
- * with Alabama DCNR), and the WMA is larger than the federal holding — so two rule-sets
- * really do cover this ground. They happen to agree: federal law bars camping outside
- * designated sites (36 CFR 2.10(b)(10)) and none are designated, while Alabama's WMA rule
- * bars camping "except in designated sites" and this WMA designates none.
+ * The preserve is ALSO Little River Wildlife Management Area, co-managed with Alabama DCNR
+ * for hunting — so two rule-sets really do cover this ground. They happen to agree: federal
+ * law bars camping outside designated sites (36 CFR 2.10(b)(10)) and none are designated,
+ * while Alabama's WMA rule bars camping "except in designated sites" and this WMA designates
+ * none. NOTE: an earlier revision of this file claimed the WMA (13,100 ac) exceeds federal
+ * ownership (11,042 ac) and therefore spans non-federal land. That did not survive review —
+ * neither figure could be verified from a live official source (the state WMA page 404s and
+ * the NPS statistics page is offline), and the compendium describes the WMA as "that portion
+ * of the preserve", i.e. a SUBSET. Multiple owners are real (four cooperator logos, a plotted
+ * private-land category); the geometry is unresolved and is no longer asserted.
  *
  * So the answer is "no camping" — but we show the reader every source and its date rather
  * than asserting it, because the newest federal document can be read the other way.
@@ -35,12 +40,12 @@ const LIRI_JURISDICTIONS: Jurisdiction[] = [
   },
   {
     name: "Alabama DCNR — Wildlife & Freshwater Fisheries",
-    role: "Sets hunting rules across Little River WMA (13,100 acres), which overlays the preserve's backcountry and extends onto non-federal land",
-    url: "https://www.outdooralabama.com/",
+    role: "Sets the hunting rules on Little River WMA — which the compendium describes as “that portion of the preserve identified by the State of Alabama as the Little River Canyon Wildlife Management Area”. Hunting only; it grants nothing about camping.",
+    url: "https://www.nps.gov/liri/planyourvisit/hunting.htm",
   },
   {
     name: "Forever Wild Land Trust / Alabama State Parks",
-    role: "Own inholdings inside the WMA boundary — named as cooperators on the WMA permit",
+    role: "Named as cooperators on the WMA permit, and the maps plot a separate private-land category — so more than one owner is involved. The exact geometry is unresolved: we could not verify published acreage from an official source.",
   },
 ];
 
@@ -68,11 +73,11 @@ const LIRI_RULES: LandRule[] = [
     authority: "National Park Service — 36 CFR 2.10",
     detail:
       "Federal law is the backstop that settles this regardless of how the park's own wording reads: 36 CFR 2.10(a) lets a superintendent designate camping sites, and 2.10(b)(10) prohibits “camping outside of designated sites or areas.” Little River Canyon has designated no sites and operates no campground, so camping is prohibited by regulation.",
-    sourceUrl: "https://www.law.cornell.edu/cfr/text/36/2.10",
-    sourceKind: "Federal regulation (36 CFR)",
-    confidence: "likely",
-    caveat:
-      "Read from the Cornell LII mirror — ecfr.gov was unreachable, so the exact current revision date could not be captured.",
+    sourceUrl:
+      "https://www.ecfr.gov/api/versioner/v1/full/2026-08-13/title-36.xml?part=2&section=2.10",
+    sourceKind: "Federal regulation — official eCFR current text",
+    sourceDate: "eCFR issue date 2026-08-13",
+    confidence: "verified",
   },
   {
     activity: "Camping",
@@ -92,7 +97,7 @@ const LIRI_RULES: LandRule[] = [
     status: "prohibited",
     authority: "National Park Service — park camping page",
     detail:
-      "The park states plainly: “Camping is currently not permitted at Little River Canyon National Preserve.” It points to DeSoto State Park (about 7 miles north, tent/RV/backcountry sites) and privately run campgrounds around Fort Payne instead.",
+      "The park states plainly: “Camping is currently not permitted at Little River Canyon National Preserve.” It points to DeSoto State Park (NPS says 7 miles north on this page and 10 on another — call it roughly 7 to 10 miles, tent/RV/backcountry sites) and privately run campgrounds around Fort Payne instead.",
     sourceUrl:
       "https://www.nps.gov/liri/planyourvisit/camping-at-little-river-canyon-national-preserve.htm",
     sourceKind: "Park web page",
@@ -111,6 +116,30 @@ const LIRI_RULES: LandRule[] = [
     sourceKind: "State regulation (Ala. Admin. Code 220-2-.55)",
     confidence: "verified",
     caveat: "The official PDF prints no revision date, so the in-force version could not be confirmed.",
+  },
+  {
+    activity: "Camping",
+    status: "prohibited",
+    authority: "National Park Service — Permits & Reservations",
+    detail:
+      "This closes the obvious loophole — “can I just get a permit?” No. The park's permits page, the freshest document in the whole record, lists every permit it issues: Special Use, Filming, and Commercial Use Authorization. There is no camping permit, no backcountry permit and no overnight permit, and the page never mentions camping.",
+    sourceUrl: "https://www.nps.gov/liri/planyourvisit/permitsandreservations.htm",
+    sourceKind: "Park web page",
+    sourceDate: "July 9, 2026",
+    confidence: "verified",
+  },
+  {
+    activity: "Why the nps.gov map looks like camping is allowed",
+    status: "unclear",
+    authority: "nps.gov Maps page (map authored by Alabama DCNR, not NPS)",
+    detail:
+      "Worth knowing before you trust the map: nps.gov publishes no NPS park map here at all — it hosts a state-authored hunting basemap, headed “Little River Canyon National Preserve Wildlife Management Area Map” and credited to the Alabama Department of Conservation and Natural Resources. That is also why the park reads as a WMA. Its legend does carry a “CAMP OR LODGE” symbol, but the one legible camp triangle sits beside the “DESOTO STATE PARK RESORT” label — measured entirely outside the shaded WMA area — so it marks DeSoto's camping, under Alabama State Parks, not a campsite in the preserve. The legend also lists “PRIMITIVE ROAD”, which is easy to read as “primitive camping”. The state's own 2020-2021 edition of this map already had no camping symbol, and neither does the current 2026-27 one, so the version nps.gov serves is at least two editions stale.",
+    sourceUrl: "https://www.nps.gov/liri/planyourvisit/maps.htm",
+    sourceKind: "Official park web page hosting a state map",
+    sourceDate: "Page last updated November 29, 2020",
+    confidence: "verified",
+    caveat:
+      "A map symbol is the weakest authority here — only the superintendent can designate a campsite, and that happens in the compendium, not on a basemap legend.",
   },
   {
     activity: "Backcountry / primitive campsites (Slant Rock, Billy's Ford, Hartline Ford)",
@@ -184,7 +213,7 @@ const LIRI_RULES: LandRule[] = [
 ];
 
 const LIRI_RULES_SUMMARY =
-  "You cannot camp inside the preserve — but the official sources genuinely disagree, so here is all of it. Three NPS pages say camping is not permitted, and no campsites are designated, which is what makes it prohibited under 36 CFR 2.10. The catch: the newest and most authoritative document, the 2026 Superintendent's Compendium, literally reads “Camping is not prohibited” — with a justification that only makes sense for a prohibition. Its night closure of every lot and backcountry road settles it in practice. The preserve is also Little River Wildlife Management Area, and Alabama's WMA rule independently bars camping except in designated sites, of which this WMA has none. Camp at DeSoto State Park, 15 minutes north, and drive in.";
+  "You cannot camp inside the preserve — but the official sources genuinely disagree, so here is all of it. Three NPS pages say camping is not permitted, and no campsites are designated, which is what makes it prohibited under 36 CFR 2.10. The catch: the newest and most authoritative document, the 2026 Superintendent's Compendium, literally reads “Camping is not prohibited” — with a justification that only makes sense for a prohibition. Its night closure of every lot and backcountry road settles it in practice. The preserve is also Little River Wildlife Management Area — a hunting overlay, not a camping permission — and Alabama's WMA rule independently bars camping except in designated sites, of which this WMA has none. Camp at DeSoto State Park, 15 minutes north, and drive in.";
 
 /**
  * Northeast Alabama — Little River Canyon / Lookout Mountain.
