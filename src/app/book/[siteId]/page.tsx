@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { getSiteById } from "@/lib/mock-sites";
+import { getCuratedById as getSiteById } from "@/lib/curated";
 import { BOOKING_POLICY, buildAgreedRules } from "@/lib/booking";
 import { DEFAULT_NATURE_EXPECTATIONS, WILDLIFE_PROTECTION_RULE } from "@/lib/trust";
 import { createImmerseClient } from "@/lib/supabase";
@@ -71,8 +71,8 @@ export default function BookPage() {
         <h1 className="text-2xl font-bold text-forest-900 mb-3">Public land</h1>
         <p className="text-forest-700 mb-6">
           This place is on public land. There is no private host contract — follow the pass,
-          parking, and stay rules on the site page (and official agency rules). Reserve on
-          Recreation.gov when required.
+          parking, and stay rules on the site page (and official agency rules). Reserve on the
+          official system (Recreation.gov, or the state park&apos;s own site) when required.
         </p>
         <Link
           href={`/site/${site.id}`}

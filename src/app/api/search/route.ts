@@ -1,153 +1,224 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchFacilities, mapFacilityToCampSite } from "@/lib/ridb";
-import { mockSites } from "@/lib/mock-sites";
+import { searchFacilities, mapFacilityToCampSite, inferLandManagerFromFacility } from "@/lib/ridb";
 import {
   searchRecGovCampgrounds,
   mapRecGovToCampSite,
   STATE_SEARCH_CENTERS,
 } from "@/lib/recgov";
 import { CampSite } from "@/lib/types";
+import { curatedForState, curatedNear } from "@/lib/curated";
+import { resolvePlace, HOME_REFERENCE, type Place } from "@/lib/places";
+import { estimateDriveMinutes, haversineMiles } from "@/lib/geo";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * GET /api/search
+ *   q        free text — a PLACE ("Little River Canyon", "Fort Payne") or a keyword ("waterfalls")
+ *   state    2-letter fallback region when q is not a place
+ *   lat,lng  explicit center (overrides place resolution)
+ *   radius   miles (only honoured with explicit lat/lng; places carry their own radius)
+ *   activity camping | developed | dispersed | ohv | private
+ *
+ * Order of truth: RIDB (key) → Recreation.gov public → curated. Curated sites for the
+ * region (state parks, destinations, dispersed…) are ALWAYS merged in — the federal
+ * inventory can't see them. A resolved place sorts results by distance from it.
+ */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const lat = searchParams.get("lat");
-  const lng = searchParams.get("lng");
-  const state = (searchParams.get("state") || "GA").toUpperCase().slice(0, 2);
   const clamp = (n: number, lo: number, hi: number, dflt: number) =>
     Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
-  const radius = clamp(Number(searchParams.get("radius")), 1, 500, 100);
-  const query = (searchParams.get("q") || undefined)?.slice(0, 120);
+
+  const latParam = Number(searchParams.get("lat"));
+  const lngParam = Number(searchParams.get("lng"));
+  const hasExplicitCenter =
+    Number.isFinite(latParam) && Number.isFinite(lngParam) && !(latParam === 0 && lngParam === 0);
+  const requestedState = (searchParams.get("state") || "GA").toUpperCase().slice(0, 2);
+  const rawQuery = (searchParams.get("q") || "").trim().slice(0, 120) || undefined;
   const limit = clamp(Number(searchParams.get("limit")), 1, 200, 50);
   const activityFilter = (searchParams.get("activity") || "camping").toLowerCase();
 
-  // ── Path A: RIDB with API key ──────────────────────────────────────────
+  // ── Resolve "where" ────────────────────────────────────────────────────
+  const place: Place | null = hasExplicitCenter ? null : await resolvePlace(rawQuery);
+  const center = hasExplicitCenter
+    ? { lat: latParam, lng: lngParam, radius: clamp(Number(searchParams.get("radius")), 1, 500, 100) }
+    : place
+      ? { lat: place.lat, lng: place.lng, radius: place.radiusMiles }
+      : null;
+  const state = place?.state || requestedState;
+  // Text that is NOT a place gets used as a keyword; place names never go to the federal APIs
+  const textQuery = place ? undefined : rawQuery;
+  const stateCenter = STATE_SEARCH_CENTERS[state];
+
+  let sites: CampSite[] = [];
+  let source: "ridb" | "recreation.gov" | "mock" = "mock";
+  let total = 0;
+  const notes: string[] = [];
+
+  // ── Path A: RIDB with API key (NOTE: RIDB silently caps radius at ~25 mi) ──
+  const byId = new Map<string, CampSite>();
+  const push = (list: CampSite[]) => {
+    for (const s of list) if (!byId.has(s.id)) byId.set(s.id, s);
+  };
   if (process.env.RIDB_API_KEY) {
     try {
-      const activityParam = activityFilter === "ohv" ? undefined : "9";
-
-      const params: Parameters<typeof searchFacilities>[0] = {
-        state,
-        radius,
+      const base = {
         limit,
-        query,
-        activity: activityParam,
+        query: textQuery,
+        activity: activityFilter === "ohv" ? undefined : "9",
+        ...(center
+          ? { latitude: center.lat, longitude: center.lng, radius: Math.min(center.radius, 25) }
+          : { state, radius: stateCenter?.radius ?? 150 }),
       };
-
-      if (lat && lng) {
-        params.latitude = Number(lat);
-        params.longitude = Number(lng);
+      let { facilities, total: t } = await searchFacilities(base);
+      // The camping activity filter is sometimes too strict (or empty for keyword queries) — retry without it
+      if (facilities.length === 0 && base.activity) {
+        ({ facilities, total: t } = await searchFacilities({ ...base, activity: undefined }));
       }
-
-      const { facilities, total } = await searchFacilities(params);
-
-      let sites: CampSite[] = facilities
-        .filter((f) => f.FacilityLatitude && f.FacilityLongitude)
-        .map((f) => {
-          const mapped = mapFacilityToCampSite(f);
-          mapped.dataSource = "ridb";
-          mapped.landManager = inferLandManager(f);
-          return mapped;
-        });
-
-      sites = mergeCurated(sites, state, activityFilter);
-
-      return NextResponse.json({
-        source: "ridb",
-        state,
-        total,
-        count: sites.length,
-        sites,
-      });
+      total = t;
+      push(
+        facilities
+          .filter((f) => f.FacilityLatitude && f.FacilityLongitude)
+          .map((f) => {
+            const mapped = mapFacilityToCampSite(f);
+            mapped.dataSource = "ridb";
+            mapped.landManager = inferLandManagerFromFacility(f);
+            return mapped;
+          })
+      );
+      if (byId.size > 0) source = "ridb";
     } catch (err) {
       console.error("RIDB search failed, trying Recreation.gov public API:", err);
     }
   }
 
-  // ── Path B: Recreation.gov public search (no key) ──────────────────────
-  try {
-    const center = STATE_SEARCH_CENTERS[state];
-    const { results, total } = await searchRecGovCampgrounds({
-      state,
-      query,
-      limit: Math.min(limit, 50),
-      lat: lat ? Number(lat) : center?.lat,
-      lng: lng ? Number(lng) : center?.lng,
-      radius: lat && lng ? radius : center?.radius,
-    });
-
-    let sites: CampSite[] = results
-      .filter((r) => r.latitude && r.longitude)
-      .map(mapRecGovToCampSite);
-
-    sites = mergeCurated(sites, state, activityFilter);
-
-    if (query) {
-      sites = rankAndFilterByQuery(sites, query, results);
-    } else {
-      // Prefer listings with photos so the feed feels inviting
-      sites = [...sites].sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)));
+  // ── Path B: Recreation.gov public search ───────────────────────────────
+  // Always run for place searches (RIDB's 25-mi cap misses real options 25–40 mi out);
+  // otherwise only when RIDB gave nothing.
+  if (byId.size === 0 || (center && center.radius > 25)) {
+    try {
+      const { results, total: t } = await searchRecGovCampgrounds({
+        state,
+        query: textQuery,
+        limit: Math.min(limit, 50),
+        lat: center?.lat ?? stateCenter?.lat,
+        lng: center?.lng ?? stateCenter?.lng,
+        radius: center?.radius ?? stateCenter?.radius,
+        strictState: !center,
+      });
+      if (byId.size === 0) total = t;
+      const before = byId.size;
+      push(results.filter((r) => r.latitude && r.longitude).map(mapRecGovToCampSite));
+      if (before === 0 && byId.size > 0) source = "recreation.gov";
+    } catch (err) {
+      console.error("Recreation.gov search failed:", err);
     }
+  }
+  sites = Array.from(byId.values());
 
-    return NextResponse.json({
-      source: "recreation.gov",
-      state,
-      total,
-      count: sites.length,
-      sites,
-      message:
-        state === "GA"
-          ? "Live federal campgrounds via Recreation.gov, plus curated dispersed / WMA / OHV / private nature stays for Georgia."
-          : "Live federal campgrounds via Recreation.gov for this area. Curated dispersed coverage is currently strongest for Georgia.",
-    });
-  } catch (err) {
-    console.error("Recreation.gov search failed:", err);
+  // ── Curated merge (always) ─────────────────────────────────────────────
+  const curated = center
+    ? curatedNear(center.lat, center.lng, center.radius)
+    : curatedForState(state);
+  sites = mergeCurated(sites, curated);
+
+  // ── Keyword ranking ────────────────────────────────────────────────────
+  if (textQuery) {
+    sites = rankAndFilterByQuery(sites, textQuery);
   }
 
-  // ── Path C: curated Georgia fallback ───────────────────────────────────
-  let sites = state === "GA" ? [...mockSites] : [];
-
-  if (query) {
-    sites = rankAndFilterByQuery(sites, query, []);
-  } else {
-    sites = [...sites].sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)));
-  }
-
+  // ── Activity filter ────────────────────────────────────────────────────
   sites = applyActivity(sites, activityFilter);
 
+  // ── Distance from place + drive estimate + ordering ────────────────────
+  if (center) {
+    for (const s of sites) {
+      s.distanceMiles = Math.round(haversineMiles(center.lat, center.lng, s.lat, s.lng) * 10) / 10;
+    }
+    const pinned = place?.destinationSiteId;
+    sites.sort((a, b) => {
+      if (pinned) {
+        if (a.id === pinned) return -1;
+        if (b.id === pinned) return 1;
+      }
+      return (a.distanceMiles ?? 1e9) - (b.distanceMiles ?? 1e9);
+    });
+  } else if (!textQuery) {
+    // Prefer listings with photos so the feed feels inviting
+    sites = [...sites].sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)));
+  }
+  for (const s of sites) {
+    if (s.driveTimeMinutes == null) {
+      s.driveTimeMinutes = estimateDriveMinutes(
+        haversineMiles(HOME_REFERENCE.lat, HOME_REFERENCE.lng, s.lat, s.lng)
+      );
+    }
+    if (!s.state) s.state = guessState(s, state);
+  }
+
+  // ── Message ────────────────────────────────────────────────────────────
+  if (place) {
+    notes.push(
+      `Showing places within ~${place.radiusMiles} miles of ${place.name}, nearest first.`
+    );
+  }
+  if (source === "mock") {
+    notes.push(
+      curated.length
+        ? "Live federal search was unavailable — showing curated data only."
+        : `Live federal search was unavailable and there is no curated set for ${state} yet. Try again shortly.`
+    );
+  } else if (rawQuery && !place && sites.length === 0) {
+    notes.push(`Nothing matched "${rawQuery}". Try a place name (park, town, canyon) or a simpler keyword.`);
+  }
+
   return NextResponse.json({
-    source: "mock",
+    source,
     state,
-    total: sites.length,
+    place: place
+      ? {
+          slug: place.slug,
+          name: place.name,
+          state: place.state,
+          lat: place.lat,
+          lng: place.lng,
+          radiusMiles: place.radiusMiles,
+          blurb: place.blurb,
+          destinationSiteId: place.destinationSiteId,
+        }
+      : null,
+    total,
     count: sites.length,
     sites,
-    message:
-      state === "GA"
-        ? "Live federal search was unavailable — showing curated Georgia data."
-        : `Live federal search was unavailable and there is no curated set for ${state} yet. Try again shortly.`,
+    message: notes.join(" ") || undefined,
   });
 }
 
-/** Token match so "beautiful waterfalls" hits Desoto Falls / waterfall hikes. */
-function rankAndFilterByQuery(
-  sites: CampSite[],
-  query: string,
-  recgovResults: { entity_id?: string }[]
-): CampSite[] {
+function guessState(s: CampSite, fallback: string): string {
+  // Very rough bounding boxes for the Southeast — good enough for a label
+  const { lat, lng } = s;
+  if (lat > 30.2 && lat < 35.05 && lng > -88.6 && lng < -84.85) return "AL";
+  if (lat > 30.35 && lat < 35.05 && lng > -85.7 && lng < -80.75) return "GA";
+  return fallback;
+}
+
+/** Token match so "waterfalls" hits Little River Falls / Desoto Falls / waterfall hikes. */
+function rankAndFilterByQuery(sites: CampSite[], query: string): CampSite[] {
   const tokens = query
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 2 && !["the", "and", "for", "with", "near", "best"].includes(t));
-  // synonym boosts
   const expanded = new Set(tokens);
   if (tokens.some((t) => t.startsWith("waterfall") || t === "falls" || t === "cascade")) {
     expanded.add("waterfall");
     expanded.add("falls");
     expanded.add("cascade");
   }
-  const liveIds = new Set(recgovResults.map((r) => String(r.entity_id)));
+  if (tokens.some((t) => t.startsWith("swim"))) {
+    expanded.add("swim");
+    expanded.add("swimming");
+  }
 
   const scored = sites.map((s) => {
     const hay = [
@@ -157,6 +228,7 @@ function rankAndFilterByQuery(
       ...(s.mustSees || []),
       ...(s.activities || []),
       ...(s.amenities || []),
+      ...((s.nearby || []).map((n) => n.name)),
       s.notes || "",
     ]
       .join(" ")
@@ -167,17 +239,13 @@ function rankAndFilterByQuery(
       if (s.name.toLowerCase().includes(t)) score += 2;
     }
     if (s.imageUrl) score += 1.5;
-    // rec.gov search already scoped by q — keep those even if token miss on short names
-    if (liveIds.has(s.id) || s.dataSource === "ridb") score += 0.5;
+    if (s.dataSource === "ridb") score += 0.5; // federal API already scoped by q
     return { s, score };
   });
 
   let kept = scored.filter((x) => x.score > 0);
   if (kept.length === 0) {
-    // Fall back: keep rec.gov hits + any curated with photo
-    kept = scored.filter(
-      (x) => liveIds.has(x.s.id) || x.s.dataSource === "ridb" || Boolean(x.s.imageUrl)
-    );
+    kept = scored.filter((x) => x.s.dataSource === "ridb" || Boolean(x.s.imageUrl));
   }
   if (kept.length === 0) kept = scored;
 
@@ -185,29 +253,18 @@ function rankAndFilterByQuery(
   return kept.map((x) => x.s);
 }
 
-function mergeCurated(
-  sites: CampSite[],
-  state: string,
-  activityFilter: string
-): CampSite[] {
-  if (state === "GA") {
-    const curatedExtra = mockSites.filter(
-      (s) =>
-        s.type === "dispersed" ||
-        s.type === "wma" ||
-        s.type === "ohv" ||
-        s.type === "private" ||
-        s.dataSource === "curated"
-    );
-    const existingNames = new Set(sites.map((s) => s.name.toLowerCase()));
-    const existingIds = new Set(sites.map((s) => s.id));
-    curatedExtra.forEach((c) => {
-      if (!existingNames.has(c.name.toLowerCase()) && !existingIds.has(c.id)) {
-        sites.push(c);
-      }
-    });
+function mergeCurated(sites: CampSite[], curated: CampSite[]): CampSite[] {
+  const existingNames = new Set(sites.map((s) => s.name.toLowerCase()));
+  const existingIds = new Set(sites.map((s) => s.id));
+  const out = [...sites];
+  for (const c of curated) {
+    if (!existingNames.has(c.name.toLowerCase()) && !existingIds.has(c.id)) {
+      out.push({ ...c });
+      existingNames.add(c.name.toLowerCase());
+      existingIds.add(c.id);
+    }
   }
-  return applyActivity(sites, activityFilter);
+  return out;
 }
 
 function applyActivity(sites: CampSite[], activityFilter: string): CampSite[] {
@@ -231,22 +288,4 @@ function applyActivity(sites: CampSite[], activityFilter: string): CampSite[] {
     return sites.filter((s) => s.type === "developed" || s.type === "state");
   }
   return sites;
-}
-
-function inferLandManager(f: {
-  FacilityTypeDescription?: string;
-  [key: string]: unknown;
-}): CampSite["landManager"] {
-  const org = String(
-    (f as { OrgName?: string; OrganizationName?: string }).OrgName ||
-      (f as { OrganizationName?: string }).OrganizationName ||
-      ""
-  ).toLowerCase();
-  if (org.includes("forest") || org.includes("usfs")) return "USFS";
-  if (org.includes("national park") || org.includes("nps")) return "NPS";
-  if (org.includes("blm") || org.includes("land management")) return "BLM";
-  if (org.includes("corps") || org.includes("usace")) return "USACE";
-  if (org.includes("fish") || org.includes("wildlife") || org.includes("fws"))
-    return "FWS";
-  return "Other";
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { reservationSystemName } from "@/lib/reservation";
 import {
   loadTrips,
   removeTrip,
@@ -227,7 +228,7 @@ function TripList({
                     rel="noopener noreferrer"
                     className="inline-flex px-4 py-2 rounded-full border border-forest-300 text-forest-800 text-sm font-medium hover:bg-forest-50"
                   >
-                    Reserve on Recreation.gov →
+                    Reserve on {reservationSystemName(book)} →
                   </a>
                 )}
               </div>

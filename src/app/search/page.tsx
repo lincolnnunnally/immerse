@@ -40,16 +40,30 @@ async function absoluteOrigin(): Promise<string> {
   return "http://localhost:3000";
 }
 
-async function fetchSites(
-  state: string,
-  activity: string,
-  q?: string
-): Promise<{ sites: CampSite[]; source: string; message?: string; state?: string }> {
+type PlaceInfo = {
+  slug: string;
+  name: string;
+  state?: string;
+  lat: number;
+  lng: number;
+  radiusMiles: number;
+  blurb?: string;
+  destinationSiteId?: string;
+};
+
+type SearchPayload = {
+  sites: CampSite[];
+  source: string;
+  message?: string;
+  state?: string;
+  place?: PlaceInfo | null;
+};
+
+async function fetchSites(state: string, activity: string, q?: string): Promise<SearchPayload> {
   const base = await absoluteOrigin();
   const sp = new URLSearchParams({
     state,
-    radius: "160",
-    limit: "50",
+    limit: "60",
     activity,
   });
   if (q) sp.set("q", q);
@@ -61,12 +75,13 @@ async function fetchSites(
     if (!res.ok) throw new Error("Search API error");
     return res.json();
   } catch {
-    const { mockSites } = await import("@/lib/mock-sites");
+    const { curatedForState } = await import("@/lib/curated");
     return {
-      sites: state === "GA" ? mockSites : [],
+      sites: curatedForState(state),
       source: "mock",
-      message: "Could not reach search API",
+      message: "Could not reach search API — showing curated data only.",
       state,
+      place: null,
     };
   }
 }
@@ -84,7 +99,9 @@ function typeLabel(site: CampSite): string {
     case "private":
       return "Private";
     case "state":
-      return "State";
+      return "State Park";
+    case "destination":
+      return "Destination · day use";
     default:
       return site.type;
   }
@@ -102,21 +119,36 @@ function typeColor(site: CampSite): string {
       return "bg-orange-100 text-orange-900";
     case "private":
       return "bg-violet-100 text-violet-900";
+    case "state":
+      return "bg-teal-100 text-teal-900";
+    case "destination":
+      return "bg-rose-100 text-rose-900";
     default:
       return "bg-amber-100 text-amber-800";
   }
 }
 
-function SiteCard({ site }: { site: CampSite }) {
+function formatDistance(mi?: number): string {
+  if (mi == null || !Number.isFinite(mi)) return "";
+  if (mi < 1) return "< 1 mi";
+  return `${Math.round(mi)} mi`;
+}
+
+function SiteCard({ site, placeName }: { site: CampSite; placeName?: string }) {
   const passShort =
     site.passRequired.length > 32
       ? site.passRequired.slice(0, 30) + "…"
       : site.passRequired;
+  const isDestination = site.type === "destination";
 
   return (
     <Link
       href={`/site/${site.id}`}
-      className="block bg-white rounded-2xl border border-forest-100 shadow-sm hover:shadow-md hover:border-forest-300 transition overflow-hidden"
+      className={`block bg-white rounded-2xl border shadow-sm hover:shadow-md transition overflow-hidden ${
+        isDestination
+          ? "border-rose-200 hover:border-rose-300 md:col-span-2"
+          : "border-forest-100 hover:border-forest-300"
+      }`}
     >
       <SitePhoto src={site.imageUrl} alt={site.name} variant="card" />
       <div className="p-5">
@@ -131,10 +163,17 @@ function SiteCard({ site }: { site: CampSite }) {
           </span>
         </div>
 
-        {site.agency && <p className="text-xs text-forest-500 mb-3">{site.agency}</p>}
+        <p className="text-xs text-forest-500 mb-3 flex flex-wrap gap-x-2">
+          {site.agency && <span>{site.agency}</span>}
+          {site.distanceMiles != null && placeName && (
+            <span className="text-forest-700 font-medium">
+              · {formatDistance(site.distanceMiles)} from {placeName}
+            </span>
+          )}
+        </p>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
-          {site.driveTimeMinutes != null && (
+          {site.driveTimeMinutes != null && site.driveTimeMinutes > 0 && (
             <div>
               <span className="text-forest-500">Drive (from Atlanta area)</span>
               <p className="font-medium text-forest-800">
@@ -142,17 +181,19 @@ function SiteCard({ site }: { site: CampSite }) {
               </p>
             </div>
           )}
-          <div>
-            <span className="text-forest-500">Hike-in</span>
-            <p className="font-medium text-forest-800">
-              {site.hikeInMiles === 0 || site.hikeInMiles == null
-                ? site.dataSource === "ridb"
-                  ? "See site details"
-                  : "Drive-up"
-                : `${site.hikeInMiles} mi`}
-              {site.hikeInElevationGain ? ` · +${site.hikeInElevationGain} ft` : ""}
-            </p>
-          </div>
+          {!isDestination && (
+            <div>
+              <span className="text-forest-500">Hike-in</span>
+              <p className="font-medium text-forest-800">
+                {site.hikeInMiles === 0 || site.hikeInMiles == null
+                  ? site.dataSource === "ridb"
+                    ? "See site details"
+                    : "Drive-up"
+                  : `${site.hikeInMiles} mi`}
+                {site.hikeInElevationGain ? ` · +${site.hikeInElevationGain} ft` : ""}
+              </p>
+            </div>
+          )}
           <div>
             <span className="text-forest-500">Pass</span>
             <p className="font-medium text-forest-800" title={site.passRequired}>
@@ -163,16 +204,25 @@ function SiteCard({ site }: { site: CampSite }) {
             <span className="text-forest-500">Parking</span>
             <p className="font-medium text-forest-800">{site.parkingFee || "See details"}</p>
           </div>
-          <div>
-            <span className="text-forest-500">Camping fee</span>
-            <p className="font-medium text-forest-800">{site.campingFee || "See details"}</p>
-          </div>
-          <div>
-            <span className="text-forest-500">Reserve?</span>
-            <p className="font-medium text-forest-800">
-              {site.reservationRequired ? "Yes" : "No — first come"}
-            </p>
-          </div>
+          {isDestination ? (
+            <div>
+              <span className="text-forest-500">Camping</span>
+              <p className="font-medium text-forest-800">{site.campingFee || "See details"}</p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <span className="text-forest-500">Camping fee</span>
+                <p className="font-medium text-forest-800">{site.campingFee || "See details"}</p>
+              </div>
+              <div>
+                <span className="text-forest-500">Reserve?</span>
+                <p className="font-medium text-forest-800">
+                  {site.reservationRequired ? "Yes" : "No — first come"}
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {site.mustSees && site.mustSees.length > 0 && (
@@ -200,19 +250,21 @@ export default async function SearchPage({
   searchParams: Promise<{ state?: string; activity?: string; q?: string }>;
 }) {
   const params = await searchParams;
-  const state = (params.state || "GA").toUpperCase();
+  const requestedState = (params.state || "GA").toUpperCase();
   const activity = (params.activity || "camping").toLowerCase();
   const q = (params.q || "").trim();
-  const { sites, source, message } = await fetchSites(state, activity, q || undefined);
+  const payload = await fetchSites(requestedState, activity, q || undefined);
+  const { sites, source, message } = payload;
+  const place = payload.place || null;
+  // A resolved place decides the region (searching "Little River Canyon" from the GA tab lands you in AL)
+  const state = (payload.state || requestedState).toUpperCase();
 
   const sourceLabel =
     source === "ridb"
-      ? `Live federal data (RIDB) · ${state}`
+      ? `Live federal data (RIDB) + curated · ${state}`
       : source === "recreation.gov"
-        ? `Live federal campgrounds (Recreation.gov) · ${state}`
-        : state === "GA"
-          ? "Curated Georgia data (live federal search temporarily unavailable)"
-          : `Limited results for ${state}`;
+        ? `Live federal campgrounds (Recreation.gov) + curated · ${state}`
+        : `Curated data · ${state} (live federal search temporarily unavailable)`;
 
   function hrefFor(next: { state?: string; activity?: string; q?: string }) {
     const sp = new URLSearchParams();
@@ -220,25 +272,28 @@ export default async function SearchPage({
     if ((next.activity || activity) !== "camping") {
       sp.set("activity", next.activity || activity);
     }
-    const qq = next.q !== undefined ? next.q : q;
+    // Switching state pills clears a place query (it would just override the pill again)
+    const qq = next.q !== undefined ? next.q : next.state && place ? "" : q;
     if (qq) sp.set("q", qq);
     return `/search?${sp.toString()}`;
   }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-forest-900 mb-2">Find a place to immerse</h1>
-        <p className="text-forest-600">{sourceLabel}</p>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-forest-900 mb-2">
+          {place ? `Near ${place.name}` : "Find a place to immerse"}
+        </h1>
+        {place?.blurb && <p className="text-forest-700 mb-1">{place.blurb}</p>}
+        <p className="text-forest-600 text-sm">{sourceLabel}</p>
         {message && (
           <p className="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 inline-block">
             {message}
           </p>
         )}
         <p className="mt-2 text-xs text-forest-500">
-          Drive times shown on curated cards are approx. from metro Atlanta / Conyers. Live federal
-          cards use Recreation.gov details — confirm fees, passes, and access on the reservation
-          page before you go.
+          Drive times are rough estimates from metro Atlanta / Conyers — check your own route before you
+          leave. Confirm fees, passes, and access on the official page before you go.
         </p>
       </div>
 
@@ -249,7 +304,7 @@ export default async function SearchPage({
           type="search"
           name="q"
           defaultValue={q}
-          placeholder="Search by name or keyword…"
+          placeholder="Where to? e.g. Little River Canyon, Fort Payne, Helen GA — or a keyword like waterfalls"
           className="flex-1 rounded-full border border-forest-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-forest-300"
         />
         <button
@@ -258,6 +313,14 @@ export default async function SearchPage({
         >
           Search
         </button>
+        {q && (
+          <Link
+            href={hrefFor({ q: "" })}
+            className="px-4 py-2.5 rounded-full border border-forest-200 text-forest-700 text-sm font-medium hover:border-forest-400 text-center"
+          >
+            Clear
+          </Link>
+        )}
       </form>
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -298,10 +361,13 @@ export default async function SearchPage({
 
       {sites.length === 0 ? (
         <div className="text-center py-16 bg-forest-50 rounded-2xl border border-forest-100">
-          <p className="text-forest-800 font-medium mb-2">No sites matched for {state}</p>
+          <p className="text-forest-800 font-medium mb-2">
+            No sites matched{q ? ` for “${q}”` : ""} in {state}
+          </p>
           <p className="text-sm text-forest-600 max-w-md mx-auto">
-            Try another state, clear filters, or search a park name. Federal campgrounds load from
-            Recreation.gov when available.
+            Try a place name (a park, canyon, or town), another state, or clear filters. Federal
+            campgrounds load live from Recreation.gov; state parks and destinations come from our
+            curated set.
           </p>
         </div>
       ) : (
@@ -336,7 +402,7 @@ export default async function SearchPage({
 
           <div className="grid md:grid-cols-2 gap-5">
             {sites.map((site) => (
-              <SiteCard key={site.id} site={site} />
+              <SiteCard key={site.id} site={site} placeName={place?.name} />
             ))}
           </div>
         </>
@@ -349,7 +415,12 @@ export default async function SearchPage({
           : source === "recreation.gov"
             ? "Recreation.gov public inventory"
             : "Curated fallback"}
-        {state === "GA" ? " + Georgia enrichment (dispersed / WMA / OHV / private examples)" : ""}.
+        {state === "GA"
+          ? " + Georgia enrichment (dispersed / WMA / OHV / private examples)"
+          : state === "AL"
+            ? " + curated Alabama state parks, destinations & county parks (verified Aug 2026)"
+            : ""}
+        .
       </p>
     </div>
   );

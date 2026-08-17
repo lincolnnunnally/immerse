@@ -9,6 +9,8 @@ import { DirectionsLinks } from "@/components/DirectionsLinks";
 import { SitePhoto } from "@/components/SitePhoto";
 import { ScheduleTripPanel } from "@/components/ScheduleTripPanel";
 import { hasValidCoords } from "@/lib/maps";
+import { TripReadyPanel } from "@/components/TripReadyPanel";
+import { reservationSystemName } from "@/lib/reservation";
 
 function accessLabel(access?: string) {
   switch (access) {
@@ -64,7 +66,13 @@ export default async function SitePage({
           ? "OHV / 4x4"
           : site.type === "private"
             ? "Private nature stay"
-            : "Developed Campground";
+            : site.type === "state"
+              ? "State Park Campground"
+              : site.type === "destination"
+                ? "Destination · day use (camp nearby)"
+                : "Developed Campground";
+  const isDestination = site.type === "destination";
+  const reservationSystem = reservationSystemName(site.reservationUrl);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -112,7 +120,7 @@ export default async function SitePage({
         <SitePhoto src={site.imageUrl} alt={site.name} variant="hero" />
         {site.imageUrl && (
           <p className="text-[11px] text-forest-500 px-3 py-1.5 bg-forest-50 border-t border-forest-100">
-            Photo from Recreation.gov / managing agency. Confirm current conditions before you go.
+            Photo from the managing agency ({site.landManager === "NPS" ? "National Park Service" : site.landManager === "State Parks" ? "state park system" : "Recreation.gov / agency"}). Confirm current conditions before you go.
           </p>
         )}
       </div>
@@ -134,7 +142,29 @@ export default async function SitePage({
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-forest-700 text-white text-sm font-semibold hover:bg-forest-800 transition"
           >
-            Open Recreation.gov →
+            {isDestination
+              ? `Official page (${reservationSystem}) →`
+              : site.reservationRequired
+                ? `Reserve on ${reservationSystem} →`
+                : `Open ${reservationSystem} →`}
+          </a>
+        )}
+        {site.officialUrl && site.officialUrl !== site.reservationUrl && (
+          <a
+            href={site.officialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-forest-300 text-forest-800 text-sm font-semibold hover:bg-forest-50 transition"
+          >
+            Official info page ↗
+          </a>
+        )}
+        {site.phone && (
+          <a
+            href={`tel:${site.phone.replace(/[^+\d]/g, "")}`}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-full border border-forest-300 text-forest-800 text-sm font-semibold hover:bg-forest-50 transition"
+          >
+            Call {site.phone}
           </a>
         )}
         <Link
@@ -174,6 +204,40 @@ export default async function SitePage({
             </p>
           </div>
           <DirectionsLinks lat={site.lat} lng={site.lng} name={site.name} />
+        </section>
+      )}
+
+      {hasValidCoords(site.lat, site.lng) && <TripReadyPanel site={site} />}
+
+      {site.nearby && site.nearby.length > 0 && (
+        <section className="mb-8 rounded-2xl border border-forest-100 bg-white p-6 shadow-sm">
+          <h2 className="font-semibold text-forest-900 text-lg mb-1">
+            {isDestination ? "Where to sleep nearby" : "Pair it with"}
+          </h2>
+          <p className="text-sm text-forest-600 mb-4">
+            {isDestination
+              ? "There is no campground on this spot — these are the real options, closest first."
+              : "Camp here, then go see these."}
+          </p>
+          <ul className="divide-y divide-forest-100">
+            {site.nearby.map((n) => (
+              <li key={n.name} className="py-2.5 flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  {n.siteId ? (
+                    <Link href={`/site/${n.siteId}`} className="font-medium text-forest-900 underline-offset-2 hover:underline">
+                      {n.name} →
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-forest-900">{n.name}</span>
+                  )}
+                  {n.note && <p className="text-xs text-forest-600 mt-0.5">{n.note}</p>}
+                </div>
+                {n.minutes != null && (
+                  <span className="text-xs text-forest-500 shrink-0">~{n.minutes} min</span>
+                )}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -237,7 +301,7 @@ export default async function SitePage({
             <dd className="font-medium text-forest-900">{site.parkingFee || "See notes"}</dd>
           </div>
           <div>
-            <dt className="text-forest-500 mb-0.5">Camping fee</dt>
+            <dt className="text-forest-500 mb-0.5">{isDestination ? "Camping" : "Camping fee"}</dt>
             <dd className="font-medium text-forest-900">
               {site.campingFee || "Free / check site"}
             </dd>
@@ -253,13 +317,15 @@ export default async function SitePage({
             <dd className="font-medium text-forest-900">
               {site.reservationRequired ? (
                 <>
-                  Required
+                  Required · {reservationSystem}
                   {site.bookingWindow && (
                     <span className="block text-forest-600 font-normal text-xs mt-0.5">
                       Window: {site.bookingWindow}
                     </span>
                   )}
                 </>
+              ) : isDestination ? (
+                "None for day use"
               ) : (
                 "Not required — first-come, first-served"
               )}
@@ -322,7 +388,7 @@ export default async function SitePage({
         </>
       )}
 
-      {site.type !== "private" && (
+      {site.type !== "private" && !isDestination && (
         <ScheduleTripPanel site={site} facilityId={facilityId} />
       )}
 
@@ -362,11 +428,12 @@ export default async function SitePage({
         </section>
       )}
 
+      {!isDestination && (
       <section className="bg-forest-50 rounded-2xl p-6 border border-forest-100 mb-8">
         <h2 className="font-semibold text-forest-900 mb-1 text-lg">Sample 2-night immersion plan</h2>
         <p className="text-sm text-forest-600 mb-5">
-          A starting template — not a booked itinerary. Adjust once you lock dates on
-          Recreation.gov or with a host.
+          A starting template — not a booked itinerary. Adjust once you lock dates on{" "}
+          {reservationSystem === "the official site" ? "the official site" : reservationSystem} or with a host.
         </p>
 
         <div className="space-y-5">
@@ -404,6 +471,7 @@ export default async function SitePage({
           </div>
         </div>
       </section>
+      )}
 
       <section className="rounded-2xl border border-forest-100 bg-white p-6">
         <h2 className="font-semibold text-forest-900 mb-2">Share your adventure</h2>

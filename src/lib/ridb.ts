@@ -131,32 +131,102 @@ export async function getCampgroundAvailabilityMonth(
 /**
  * Map a RIDB facility into our CampSite shape (partial – we enrich further later).
  */
+type RIDBOrg = { OrgName?: string; OrgAbbrevName?: string; OrgType?: string; OrgID?: string | number };
+type RIDBRecArea = { RecAreaName?: string; RecAreaID?: string | number };
+type RIDBAddress = { AddressStateCode?: string; City?: string };
+
+/** Human agency label from a full RIDB facility record (ORGANIZATION[] + RECAREA[]). */
+export function facilityAgency(f: RIDBFacility): { agency: string; org: string; parent?: string } {
+  const orgs = ((f as { ORGANIZATION?: RIDBOrg[] }).ORGANIZATION || []).filter(Boolean);
+  const org =
+    orgs.find((o) => o.OrgName)?.OrgName ||
+    (f as { OrgName?: string }).OrgName ||
+    (f as { OrganizationName?: string }).OrganizationName ||
+    "";
+  const parent = ((f as { RECAREA?: RIDBRecArea[] }).RECAREA || []).find((r) => r.RecAreaName)?.RecAreaName;
+  const agency = org ? (parent && parent !== org ? `${org} — ${parent}` : org) : parent || "Federal / Recreation.gov";
+  return { agency, org, parent };
+}
+
+export function facilityState(f: RIDBFacility): string | undefined {
+  const addr = ((f as { FACILITYADDRESS?: RIDBAddress[] }).FACILITYADDRESS || []).find(
+    (a) => a.AddressStateCode
+  );
+  return addr?.AddressStateCode?.toUpperCase();
+}
+
+export function inferLandManagerFromFacility(f: RIDBFacility): import("./types").LandManager {
+  const { org, parent } = facilityAgency(f);
+  const o = `${org} ${parent || ""}`.toLowerCase();
+  if (o.includes("forest") || o.includes("usfs") || o.includes("usda")) return "USFS";
+  if (o.includes("national park") || o.includes("nps")) return "NPS";
+  if (o.includes("blm") || o.includes("land management")) return "BLM";
+  if (o.includes("corps") || o.includes("usace") || o.includes("army")) return "USACE";
+  if (o.includes("fish") || o.includes("wildlife") || o.includes("fws")) return "FWS";
+  if (o.includes("state park")) return "State Parks";
+  return "Other";
+}
+
+/** Campground vs. everything else RIDB calls a "facility" (visitor centers, trailheads, boat ramps…). */
+export function facilityKind(f: RIDBFacility): "campground" | "visitor center" | "trailhead" | "day-use area" | "facility" {
+  const t = String(f.FacilityTypeDescription || "").toLowerCase();
+  const n = String(f.FacilityName || "").toLowerCase();
+  const hasCampsites = Array.isArray((f as { CAMPSITE?: unknown[] }).CAMPSITE) && ((f as { CAMPSITE?: unknown[] }).CAMPSITE || []).length > 0;
+  if (t.includes("camp") || hasCampsites) return "campground";
+  if (t.includes("visitor") || n.includes("visitor center") || n.includes("canyon center")) return "visitor center";
+  if (t.includes("trailhead") || n.includes("trailhead")) return "trailhead";
+  if (t.includes("day use") || t.includes("picnic") || t.includes("boat")) return "day-use area";
+  if (n.includes("campground") || n.includes("camp ")) return "campground";
+  return "facility";
+}
+
 export function mapFacilityToCampSite(f: RIDBFacility): import("./types").CampSite {
   const id = String(f.FacilityID);
   const reservable = f.Reservable === true || String(f.FacilityReservationURL || "").includes("recreation.gov");
 
   // RIDB full payloads sometimes include MEDIA; otherwise UI falls back to placeholder
   // until Recreation.gov search path (or a media fetch) supplies preview_image_url.
-  const media = (f as { MEDIA?: { URL?: string; MediaType?: string }[] }).MEDIA;
+  const media = (f as { MEDIA?: { URL?: string; MediaType?: string; IsPrimary?: boolean }[] }).MEDIA;
   const photo =
+    media?.find((m) => m.URL && m.IsPrimary && String(m.MediaType || "").toLowerCase().includes("image"))?.URL ||
     media?.find((m) => m.URL && String(m.MediaType || "").toLowerCase().includes("image"))?.URL ||
     media?.find((m) => m.URL)?.URL;
+
+  const { agency } = facilityAgency(f);
+  const activities = ((f as { ACTIVITY?: { ActivityName?: string }[] }).ACTIVITY || [])
+    .map((a) => a.ActivityName)
+    .filter(Boolean) as string[];
+  const kind = facilityKind(f);
 
   return {
     id,
     name: f.FacilityName || "Unnamed Facility",
-    type: "developed",
-    agency: (f as any).OrgName || (f as any).OrganizationName || "Federal",
+    type: kind === "campground" ? "developed" : "destination",
+    agency,
+    landManager: inferLandManagerFromFacility(f),
+    state: facilityState(f),
+    phone: f.FacilityPhone || undefined,
+    activities: activities.length ? activities.slice(0, 12) : undefined,
     lat: Number(f.FacilityLatitude) || 0,
     lng: Number(f.FacilityLongitude) || 0,
-    reservationRequired: !!reservable,
-    reservationUrl: f.FacilityReservationURL || `https://www.recreation.gov/camping/campgrounds/${id}`,
-    bookingWindow: "Typically 6 months rolling (check site)",
-    passRequired: "Check site (America the Beautiful often covers day-use; camping fees separate)",
+    reservationRequired: kind === "campground" ? !!reservable : false,
+    reservationUrl:
+      f.FacilityReservationURL ||
+      (kind === "campground"
+        ? `https://www.recreation.gov/camping/campgrounds/${id}`
+        : `https://www.recreation.gov/gateways/${id}`),
+    bookingWindow: kind === "campground" ? "Typically 6 months rolling (check site)" : undefined,
+    passRequired:
+      kind === "campground"
+        ? "Check site (America the Beautiful often covers day-use; camping fees separate)"
+        : "Check the facility page (day-use fees vary; many federal sites are free)",
     parkingFee: "See facility details",
-    campingFee: "See Recreation.gov",
+    campingFee:
+      kind === "campground"
+        ? "See Recreation.gov"
+        : `No camping here (${kind}) — camp nearby`,
     amenities: [],
-    mustSees: [],
+    mustSees: activities.slice(0, 4),
     description: stripHtml(f.FacilityDescription || ""),
     notes: f.StayLimit ? `Stay limit: ${f.StayLimit}` : undefined,
     imageUrl: photo || undefined,

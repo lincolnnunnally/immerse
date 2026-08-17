@@ -67,7 +67,10 @@ export async function searchRecGovCampgrounds(params: {
   limit?: number;
   lat?: number;
   lng?: number;
+  /** MILES — converted to km for the API (Recreation.gov's radius + distance are km) */
   radius?: number;
+  /** When true, restrict to results claiming the given state (default: only when ≥3 match) */
+  strictState?: boolean;
 }): Promise<{ results: RecGovSearchResult[]; total: number }> {
   const state = params.state.toUpperCase();
   const center = STATE_SEARCH_CENTERS[state];
@@ -84,12 +87,12 @@ export async function searchRecGovCampgrounds(params: {
 
   const lat = params.lat ?? center?.lat;
   const lng = params.lng ?? center?.lng;
-  const radius = params.radius ?? center?.radius ?? 120;
+  const radiusMiles = params.radius ?? center?.radius ?? 120;
 
   if (lat != null && lng != null) {
     sp.set("lat", String(lat));
     sp.set("lng", String(lng));
-    sp.set("radius", String(radius));
+    sp.set("radius", String(Math.round(radiusMiles * 1.609344)));
   }
 
   const data = await recgovFetch<{
@@ -99,8 +102,9 @@ export async function searchRecGovCampgrounds(params: {
 
   let results = data.results || [];
 
-  // Prefer matches that claim the selected state when we have a code
-  if (center) {
+  // Prefer matches that claim the selected state when we have a code (skipped for place
+  // searches — a canyon on a state line legitimately has campgrounds in both states)
+  if (center && params.strictState !== false) {
     const stateName = center.label.toLowerCase();
     const scored = results.map((r) => {
       const sc = (
@@ -183,6 +187,9 @@ function inferLandManager(org?: string): LandManager {
 
 export function mapRecGovToCampSite(r: RecGovSearchResult): CampSite {
   const id = String(r.entity_id);
+  // rec.gov tags day-use shelters/pavilions as "campground" — don't sell them as places to sleep
+  const dayUseOnly =
+    /shelter|picnic|pavilion|day use|day-use/i.test(r.name || "") && !/camp/i.test(r.name || "");
   const activities = (r.activities || [])
     .map((a) => a.activity_name)
     .filter(Boolean) as string[];
@@ -197,18 +204,18 @@ export function mapRecGovToCampSite(r: RecGovSearchResult): CampSite {
   return {
     id,
     name: r.name || "Campground",
-    type: "developed",
+    type: dayUseOnly ? "destination" : "developed",
     agency,
     landManager: inferLandManager(r.org_name),
     lat: Number(r.latitude) || 0,
     lng: Number(r.longitude) || 0,
-    reservationRequired: r.reservable !== false,
+    reservationRequired: dayUseOnly ? false : r.reservable !== false,
     reservationUrl: `https://www.recreation.gov/camping/campgrounds/${id}`,
     bookingWindow: "Typically 6 months rolling (confirm on Recreation.gov)",
     passRequired:
       "Check Recreation.gov / facility page (America the Beautiful often covers day-use; camping fees separate)",
     parkingFee: "See facility details",
-    campingFee: "See Recreation.gov",
+    campingFee: dayUseOnly ? "No camping here (day-use shelter) — camp nearby" : "See Recreation.gov",
     amenities: [],
     mustSees: activities.slice(0, 4),
     description:

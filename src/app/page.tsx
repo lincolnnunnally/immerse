@@ -11,21 +11,54 @@ export default function HomePage() {
             <br />
             <span className="text-forest-300">Without the friction.</span>
           </h1>
-          <p className="text-lg md:text-xl text-forest-100 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Find federal campgrounds and curated Georgia nature spots on a research map. See
-            passes, parking, and reservation links clearly. Open directions in Google Maps, Apple
-            Maps, or Waze. Save trips and share YouTube adventure videos.
+          <p className="text-lg md:text-xl text-forest-100 max-w-2xl mx-auto mb-8 leading-relaxed">
+            Type a place — a canyon, a park, a town — and see where you can actually sleep near it:
+            federal campgrounds live from Recreation.gov, state parks, and curated dispersed spots.
+            Fees, passes, forecast, and reservation links up front. Directions in the maps app you
+            already use.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/search"
+          <form action="/search" method="get" className="max-w-xl mx-auto mb-5 flex flex-col sm:flex-row gap-2">
+            <input
+              type="search"
+              name="q"
+              placeholder="Where to? e.g. Little River Canyon"
+              className="flex-1 rounded-full px-5 py-3.5 text-forest-900 text-base focus:outline-none focus:ring-4 focus:ring-forest-400/40 shadow-lg"
+              aria-label="Where do you want to go?"
+            />
+            <button
+              type="submit"
               className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white text-forest-900 font-semibold text-lg hover:bg-forest-50 transition shadow-lg"
             >
-              Start searching
+              Find camping
+            </button>
+          </form>
+          <div className="flex flex-wrap gap-2 justify-center text-sm mb-6">
+            {[
+              { q: "Little River Canyon", label: "Little River Canyon, AL" },
+              { q: "Helen GA", label: "Helen, GA" },
+              { q: "Cloudland Canyon", label: "Cloudland Canyon, GA" },
+              { q: "Cheaha", label: "Cheaha / Talladega NF" },
+              { q: "Smokies", label: "Great Smoky Mountains" },
+            ].map((s) => (
+              <Link
+                key={s.q}
+                href={`/search?q=${encodeURIComponent(s.q)}`}
+                className="px-3 py-1.5 rounded-full border border-forest-500/70 text-forest-100 hover:bg-forest-800/60 transition"
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/search"
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border-2 border-forest-400 text-white font-semibold hover:bg-forest-800/50 transition"
+            >
+              Browse by state
             </Link>
             <Link
               href="/adventures"
-              className="inline-flex items-center justify-center px-8 py-3.5 rounded-full border-2 border-forest-400 text-white font-semibold text-lg hover:bg-forest-800/50 transition"
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border-2 border-forest-400 text-white font-semibold hover:bg-forest-800/50 transition"
             >
               Adventure videos
             </Link>
@@ -47,18 +80,20 @@ export default function HomePage() {
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-forest-100">
             <div className="text-3xl mb-4">🗺️</div>
-            <h3 className="font-semibold text-lg text-forest-900 mb-2">Unified search</h3>
+            <h3 className="font-semibold text-lg text-forest-900 mb-2">Search by place</h3>
             <p className="text-forest-700 text-sm leading-relaxed">
-              Live federal campgrounds via Recreation.gov, plus Georgia dispersed / WMA / OHV and
-              example private nature stays — one clean interface.
+              Live federal campgrounds via Recreation.gov, plus state parks, destinations, and
+              dispersed / WMA / OHV spots we&apos;ve verified — sorted by distance from where you
+              want to be.
             </p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-forest-100">
             <div className="text-3xl mb-4">✅</div>
-            <h3 className="font-semibold text-lg text-forest-900 mb-2">Less guessing</h3>
+            <h3 className="font-semibold text-lg text-forest-900 mb-2">Trip-ready, not just listed</h3>
             <p className="text-forest-700 text-sm leading-relaxed">
-              Pass, parking, fees, and reservation status on the card. Curated spots include
-              Atlanta-area drive estimates; always confirm on the official site before you leave.
+              Pass, parking, fees, and who actually holds the reservation. Every site page pulls the
+              live NWS forecast, weather and park alerts, and sunrise/sunset — the night-before
+              checklist, done.
             </p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-forest-100">
@@ -78,8 +113,8 @@ export default function HomePage() {
             Ready to get outside?
           </h2>
           <p className="text-forest-700 mb-8">
-            Start with the Southeast. Live federal inventory works across the states we list; Georgia
-            has the deepest curated extras.
+            Start with the Southeast. Live federal inventory works across every state we list;
+            Georgia and northeast Alabama have the deepest curated extras.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
@@ -87,6 +122,12 @@ export default function HomePage() {
               className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-forest-700 text-white font-semibold text-lg hover:bg-forest-800 transition shadow-md"
             >
               Search Georgia
+            </Link>
+            <Link
+              href="/search?state=AL"
+              className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-forest-700 text-white font-semibold text-lg hover:bg-forest-800 transition shadow-md"
+            >
+              Search Alabama
             </Link>
             <Link
               href="/partners"

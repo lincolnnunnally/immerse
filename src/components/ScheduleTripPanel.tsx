@@ -10,6 +10,7 @@ import {
   stayIsOpen,
 } from "@/lib/availability";
 import { addTrip, currentUserId, isTripSaved } from "@/lib/trips";
+import { reservationSystemName } from "@/lib/reservation";
 
 type MonthPayload = {
   facilityId: string;
@@ -67,6 +68,7 @@ export function ScheduleTripPanel({
   const [alreadySaved, setAlreadySaved] = useState(false);
 
   const maxNights = site.maxStayDays && site.maxStayDays > 0 ? Math.min(site.maxStayDays, 14) : 7;
+  const system = reservationSystemName(site.reservationUrl);
 
   useEffect(() => {
     isTripSaved(site.id).then(setAlreadySaved).catch(() => {});
@@ -164,14 +166,16 @@ export function ScheduleTripPanel({
         nights,
         notes: stayOk
           ? `Scheduled ${arrival} → ${depart} (${nights} night${nights === 1 ? "" : "s"}) · calendar showed openings`
-          : `Planned ${arrival} → ${depart} (${nights} night${nights === 1 ? "" : "s"}) · verify openings on Recreation.gov`,
+          : `Planned ${arrival} → ${depart} (${nights} night${nights === 1 ? "" : "s"}) · verify openings on ${system}`,
       });
       if (ok) {
         setAlreadySaved(true);
         setSavedMsg(
           stayOk
             ? "Trip scheduled in My Trips. Next: reserve on Recreation.gov so the site is actually yours."
-            : "Dates saved to My Trips. Calendar did not show full openings — confirm on Recreation.gov before you go."
+            : facilityId
+              ? "Dates saved to My Trips. Calendar did not show full openings — confirm on Recreation.gov before you go."
+              : `Dates saved to My Trips. Reserve on ${system} so the site is actually yours.`
         );
       } else {
         setSavedMsg("Could not save trip. Try signing in again.");
@@ -200,8 +204,9 @@ export function ScheduleTripPanel({
       <section className="bg-white rounded-2xl border border-forest-100 p-6 mb-8 shadow-sm">
         <h2 className="font-semibold text-forest-900 mb-2 text-lg">Schedule this trip</h2>
         <p className="text-sm text-forest-600 mb-4">
-          This place isn&apos;t linked to a Recreation.gov campground calendar. You can still save
-          planned dates and follow official rules (first-come / dispersed / private).
+          {site.reservationRequired && site.reservationUrl
+            ? `This place books through ${system}, not Recreation.gov — so there is no live calendar here. Save your planned dates, then reserve on ${system} (link below) so the site is actually yours.`
+            : "This place isn't linked to a Recreation.gov campground calendar. You can still save planned dates and follow official rules (first-come / dispersed / private)."}
         </p>
         <ManualSchedule
           site={site}
@@ -214,6 +219,7 @@ export function ScheduleTripPanel({
           onSchedule={handleSchedule}
           savedMsg={savedMsg}
           reservationUrl={site.reservationUrl}
+          systemName={system}
         />
       </section>
     );
@@ -447,6 +453,7 @@ function ManualSchedule({
   onSchedule,
   savedMsg,
   reservationUrl,
+  systemName,
 }: {
   site: CampSite;
   arrival: string;
@@ -458,6 +465,7 @@ function ManualSchedule({
   onSchedule: () => void;
   savedMsg: string;
   reservationUrl?: string;
+  systemName?: string;
 }) {
   return (
     <div>
@@ -500,7 +508,7 @@ function ManualSchedule({
           rel="noopener noreferrer"
           className="ml-2 inline-flex px-5 py-2.5 rounded-full border border-forest-300 text-sm font-semibold"
         >
-          Official site →
+          {systemName && systemName !== "the official site" ? `Reserve on ${systemName} →` : "Official site →"}
         </a>
       )}
       {savedMsg && <p className="mt-3 text-sm text-emerald-800">{savedMsg}</p>}

@@ -43,7 +43,7 @@ export function SitePhoto({ src, alt, variant = "card", className = "" }: Props)
           🌲
         </span>
         <span className="text-xs sm:text-sm text-forest-100/90 font-medium">
-          No photo yet — open details &amp; Recreation.gov for more
+          No photo yet — see details below
         </span>
       </div>
     </div>

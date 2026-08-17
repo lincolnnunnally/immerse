@@ -1,4 +1,12 @@
-export type SiteType = "developed" | "dispersed" | "private" | "state" | "wma" | "ohv";
+export type SiteType =
+  | "developed"
+  | "dispersed"
+  | "private"
+  | "state"
+  | "wma"
+  | "ohv"
+  /** A park / canyon / waterfall area you go TO — day use, no camping on the spot */
+  | "destination";
 
 export type LandManager =
   | "USFS"
@@ -83,6 +91,20 @@ export interface CampSite {
 
   // ── Private nature stays ─────────────────────────────────────────────
   privateHost?: PrivateHostInfo;
+
+  // ── Trip-planning enrichment ─────────────────────────────────────────
+  /** Two-letter state this site is in (curated + live) */
+  state?: string;
+  /** Official info page (park site) when different from the reservation page */
+  officialUrl?: string;
+  /** Phone for the office / ranger station */
+  phone?: string;
+  /** NPS unit code (e.g. "liri") — enables live park alerts on the site page */
+  npsParkCode?: string;
+  /** Straight-line miles from the searched place; set per-request by the search API */
+  distanceMiles?: number;
+  /** Nearby places worth pairing with this site (camp here → go there) */
+  nearby?: { name: string; siteId?: string; minutes?: number; note?: string }[];
 }
 
 export interface TripItinerary {

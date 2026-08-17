@@ -1,0 +1,416 @@
+import type { CampSite } from "./types";
+
+/**
+ * Northeast Alabama — Little River Canyon / Lookout Mountain.
+ * Every fact below was verified against the official source cited in each entry's
+ * `notes` on 2026-08-16/17 (nps.gov/liri, developer.nps.gov, alapark.com,
+ * cherokeerockvillage.com). Coordinates come from USGS GNIS, the US Census
+ * geocoder on the official street address, OpenStreetMap, or the managing org.
+ *
+ * The one thing you must know about this area: the National Preserve itself has
+ * NO camping (day use only; the three backcountry sites are closed indefinitely).
+ * You sleep at DeSoto State Park, Cherokee Rock Village, or Buck's Pocket and
+ * drive into the canyon.
+ */
+
+const LRC_NEARBY: NonNullable<CampSite["nearby"]> = [
+  {
+    name: "DeSoto State Park — Improved Campground (94 hookup sites, tents welcome)",
+    siteId: "al-desoto-state-park",
+    minutes: 15,
+    note: "Closest real camping. Reserve at reserve.alapark.com/desoto or call 256-845-5075. Check-in 2 PM.",
+  },
+  {
+    name: "DeSoto State Park — Primitive Campground (18 walk-in tent sites)",
+    siteId: "al-desoto-primitive",
+    minutes: 15,
+    note: "Quieter and wooded — fire rings, vault toilet, central water. Gate key at check-in.",
+  },
+  {
+    name: "Cherokee Rock Village (Cherokee County / SCC, Leesburg)",
+    siteId: "al-cherokee-rock-village",
+    minutes: 40,
+    note: "Has a first-come, first-served tent section at $19/night — no reservation needed if you're deciding late.",
+  },
+  {
+    name: "Buck's Pocket State Park (Grove Oak) — 256-622-8400",
+    minutes: 45,
+    note: "23 RV sites + 11 primitive tent sites. Reserve at reserve.alapark.com/bucks-pocket. Verified alapark.com 2026-08-17.",
+  },
+];
+
+export const alabamaSites: CampSite[] = [
+  // ── The destination itself ─────────────────────────────────────────────
+  {
+    id: "al-little-river-canyon",
+    name: "Little River Canyon National Preserve",
+    type: "destination",
+    agency: "National Park Service — Little River Canyon National Preserve",
+    landManager: "NPS",
+    state: "AL",
+    npsParkCode: "liri",
+    lat: 34.3951,
+    lng: -85.6269,
+    elevation: 1200,
+    driveTimeMinutes: 173,
+    hikeInMiles: 0,
+    reservationRequired: false,
+    reservationUrl: "https://www.nps.gov/liri/planyourvisit/hours.htm",
+    officialUrl: "https://www.nps.gov/liri/index.htm",
+    phone: "256-845-9605",
+    passRequired:
+      "None for the preserve, Little River Falls, the Canyon Center or the Rim Parkway. $15/vehicle/day only at Canyon Mouth Park (America the Beautiful accepted).",
+    parkingFee: "Free — Little River Falls lot holds 100 cars with RV/bus spaces",
+    campingFee:
+      "NO camping anywhere in the preserve — day use only. Nearest camping: DeSoto State Park, 15 min north.",
+    amenities: [
+      "Restrooms at Little River Falls, Eberhart Point and Canyon Mouth Park",
+      "Picnic tables & grills at the Falls, Blue Hole and Canyon Mouth",
+      "ADA boardwalk to the Little River Falls overlook",
+      "Canyon Center (JSU): WiFi, water bottle filling, film, gift shop — CLOSED MONDAYS",
+      "26+ miles of trails",
+      "Swim holes: Blue Hole, Little Falls, below Little River Falls, Eberhart",
+      "No food or vendors inside the preserve — Fort Payne is ~10 mi west",
+    ],
+    mustSees: [
+      "Little River Falls (45 ft) — boardwalk from the free lot west of the AL-35 bridge",
+      "Little Falls / Martha's Falls swim hole — 0.75 mi trail, 137 stone steps down",
+      "Blue Hole — calm, kid-friendly swim ¼ mi east of the Falls on AL-35",
+      "Canyon Rim Parkway (AL-176): Lynn, Hawks Glide, Canyon View, Wolf Creek, Crow Point, Eberhart",
+      "Mushroom Rock",
+      "Grace's High Falls (133 ft, tallest in Alabama) — rain-fed, usually dry in August",
+      "Eberhart Trail — 0.75 mi steep down to the river swim hole and old chairlift ruins",
+    ],
+    activities: [
+      "Hiking",
+      "Swimming",
+      "Waterfall viewing",
+      "Scenic drive",
+      "Rock climbing",
+      "Kayaking (expert only)",
+      "Fishing",
+      "Wildlife viewing",
+    ],
+    description:
+      "A 15,000-acre sandstone canyon on Lookout Mountain about 10 miles east of Fort Payne: Little River Falls, a 23-mile rim parkway with eight overlooks, canyon swim holes, and a 4WD backcountry. Open sunrise to sunset with no entrance fee (except Canyon Mouth Park). There is no camping in the preserve — sleep at DeSoto State Park next door and drive in each morning.",
+    notes:
+      "Rules: no alcohol, no glass, no drones without a permit, dogs on a 6-ft leash, and stay 50 ft back from the falls edge (that one is law). The Falls lot fills by 11 AM on summer weekends. The Canyon Center and its overflow lot are closed Mondays — buy passes at the Rim of the Canyon Cafe across the street. Current closure: Slant Rock Road, no vehicle access (hike or bike in). Poor cell reception in the canyon; be out before dark; flash-flood risk after heavy rain. Verified against nps.gov/liri hours, fees, conditions and FAQ pages 2026-08-16.",
+    imageUrl:
+      "https://www.nps.gov/common/uploads/structured_data/3C870F95-1DD8-B71B-0B1A89976F5B3292.jpg",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    pulse: {
+      summary:
+        "Weekdays are calm; summer weekends fill the Falls lot by 11 AM. South of Eberhart Point the rim road (CR-275 to Canyon Mouth) is steep and winding — no trailers or RVs.",
+      crowd: "moderate",
+      roadNote: "Paved rim drive; backcountry roads need 4WD",
+      lastVerified: "2026-08",
+      source: "official",
+    },
+    nearby: LRC_NEARBY,
+  },
+  {
+    id: "al-little-river-falls",
+    name: "Little River Falls & Blue Hole (free day use)",
+    type: "destination",
+    agency: "National Park Service — Little River Canyon National Preserve",
+    landManager: "NPS",
+    state: "AL",
+    npsParkCode: "liri",
+    lat: 34.3951,
+    lng: -85.62691,
+    driveTimeMinutes: 172,
+    hikeInMiles: 0.1,
+    reservationRequired: false,
+    reservationUrl: "https://www.nps.gov/liri/planyourvisit/little-river-falls.htm",
+    officialUrl: "https://www.nps.gov/liri/planyourvisit/waterfalls.htm",
+    phone: "256-845-9605",
+    passRequired: "None",
+    parkingFee: "Free — 100-car lot on the west side of the AL-35 bridge, restrooms mid-lot",
+    campingFee: "No camping and no overnight parking; the area closes after dark.",
+    amenities: [
+      "Free parking (RV/bus spaces)",
+      "Restrooms",
+      "Picnic tables & grills",
+      "ADA boardwalk — step-free route plus a shorter rock-step route",
+      "Swim hole below the falls at low water",
+      "Bridge Trail, 0.75 mi to the Canyon Center",
+    ],
+    mustSees: [
+      "Boardwalk view of the 45-ft falls",
+      "Little Falls / Martha's Falls swim — 0.75 mi, 137 stone steps",
+      "Blue Hole — ¼ mi east on AL-35, very small lot",
+      "The AL-35 bridge overlooks",
+    ],
+    activities: ["Waterfall viewing", "Swimming", "Hiking", "Picnicking"],
+    description:
+      "The 45-foot waterfall where the canyon begins, right at the AL-35 bridge — the easiest big payoff in the preserve. Free lot, restrooms, and an ADA boardwalk to the overlook. By late summer the flow drops and the ledges above and below the falls turn into wading and swimming pools; the Little Falls Trail drops 137 stone steps to a river-wide sandstone shelf that is the local favorite swim spot.",
+    notes:
+      "The lot is often full by 11 AM on late-spring and summer weekends and staff close it; the Canyon Center overflow lot is closed Mondays. Rocks are slippery and people have died here — stay 50 ft from the falls edge. Coordinates from USGS GNIS feature 150711. Verified nps.gov/liri 2026-08-16.",
+    imageUrl:
+      "https://www.nps.gov/common/uploads/structured_data/8C825EA4-0C4E-1B2F-69AC99C5CBFF3679.jpg",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    nearby: LRC_NEARBY,
+  },
+  {
+    id: "al-canyon-mouth-park",
+    name: "Canyon Mouth Park ($15/vehicle day use)",
+    type: "destination",
+    agency: "National Park Service — Little River Canyon National Preserve",
+    landManager: "NPS",
+    state: "AL",
+    npsParkCode: "liri",
+    lat: 34.2887,
+    lng: -85.6833,
+    driveTimeMinutes: 177,
+    hikeInMiles: 0,
+    reservationRequired: false,
+    reservationUrl: "https://www.nps.gov/liri/planyourvisit/canyon-mouth-park.htm",
+    officialUrl: "https://www.nps.gov/liri/planyourvisit/fees.htm",
+    phone: "256-779-3199",
+    passRequired:
+      "$15 per vehicle per day, or $35 annual. Fee machine takes cash or card — no bills over $20, exact change, no change given. America the Beautiful passes accepted.",
+    parkingFee: "Included in the $15 entrance",
+    campingFee:
+      "No camping. Gates close promptly (summer 8 AM–7 PM Central) — vehicles left inside get ticketed or locked in.",
+    amenities: [
+      "Paved parking",
+      "Restrooms",
+      "Pavilion",
+      "Shaded picnic tables & grills",
+      "Playground",
+      "Soccer field",
+      "Easy river access / swimming",
+      "Kayak take-out",
+      "1-mile easy river trail to Johnnie's Creek",
+    ],
+    mustSees: ["Canyon Mouth Trail along the Little River", "Wading and swimming at the river"],
+    activities: ["Swimming", "Picnicking", "Hiking", "Kayaking"],
+    description:
+      "The shady family end of the canyon, at its southern mouth near Cedar Bluff in Cherokee County — and the only fee area in the preserve. Easy river access, lots of shade, grills, and a flat one-mile trail along the water. Reach it from AL-273 onto Cherokee CR-275, or down 11 steep, winding miles from Eberhart Point (no trailers or RVs).",
+    notes:
+      "Summer hours 8 AM–7 PM Central. Many phone map apps call it “Canyon Mouth Picnic Area”. Bring cash as a backup for the fee machine. Coordinates from OpenStreetMap. Verified nps.gov hours/fees pages (updated May 2026).",
+    imageUrl:
+      "https://www.nps.gov/common/uploads/structured_data/8C58A4FA-05FF-876E-05DD3F27CD0A3CB3.jpg",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    nearby: LRC_NEARBY,
+  },
+  {
+    id: "al-desoto-falls",
+    name: "DeSoto Falls (day use)",
+    type: "destination",
+    agency: "Alabama State Parks — DeSoto State Park",
+    landManager: "State Parks",
+    state: "AL",
+    lat: 34.5488,
+    lng: -85.5907,
+    driveTimeMinutes: 190,
+    hikeInMiles: 0.2,
+    reservationRequired: false,
+    reservationUrl: "https://www.alapark.com/parks/desoto-state-park",
+    officialUrl: "https://www.alapark.com/parks/desoto-state-park",
+    phone: "256-845-5380",
+    passRequired: "None stated for the falls day-use area — confirm with the park office",
+    parkingFee: "Day-use lot at the falls overlook",
+    campingFee: "No camping at the falls — camp in DeSoto State Park a few minutes south.",
+    amenities: ["Parking", "Overlook platforms", "Short walk to the upper falls and dam"],
+    mustSees: ["The ~100-ft falls plunging into the gorge", "Upper falls / old dam area"],
+    activities: ["Waterfall viewing", "Photography", "Short hike"],
+    description:
+      "A tall waterfall on the West Fork of the Little River in its own day-use area a few miles north of DeSoto State Park's campground — one of the most photographed falls in Alabama. Short walk from the lot to the overlooks. Flow depends on recent rain, so late summer can be thin.",
+    notes:
+      "Separate from the state park campground; larger vehicles should avoid CR-613 per the park. Coordinates from OpenStreetMap (waterway/waterfall feature). Flow is rain-dependent — after a dry stretch expect a modest stream. Verified alapark.com 2026-08-17.",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    nearby: [
+      { name: "DeSoto State Park — Improved Campground", siteId: "al-desoto-state-park", minutes: 10 },
+      { name: "DeSoto State Park — Primitive Campground", siteId: "al-desoto-primitive", minutes: 10 },
+      { name: "Little River Canyon National Preserve", siteId: "al-little-river-canyon", minutes: 25 },
+    ],
+  },
+
+  // ── Where you actually sleep ───────────────────────────────────────────
+  {
+    id: "al-desoto-state-park",
+    name: "DeSoto State Park — Improved Campground",
+    type: "state",
+    agency: "Alabama State Parks — DeSoto State Park",
+    landManager: "State Parks",
+    state: "AL",
+    lat: 34.5002,
+    lng: -85.6181,
+    elevation: 1700,
+    driveTimeMinutes: 184,
+    hikeInMiles: 0,
+    reservationRequired: true,
+    reservationUrl: "https://reserve.alapark.com/desoto",
+    officialUrl: "https://www.alapark.com/parks/desoto-state-park/improved-campground",
+    phone: "256-845-5075",
+    bookingWindow:
+      "Online or by phone; same-day is possible by phone if sites remain. Two-night minimum on weekends.",
+    passRequired: "None to camp. America the Beautiful does not apply — this is a state park.",
+    parkingFee: "Included with your campsite",
+    campingFee:
+      "Rates vary by season and are not published online — call 256-845-5075. Plus a one-time $5.25 reservation fee and a 4.25% resort fee per night, paid in full at booking.",
+    maxStayDays: 14,
+    amenities: [
+      "94 full-hookup sites (50/30 amp) — tents welcome, 2 tents or 1 RV + 1 tent per site",
+      "Comfort stations with hot showers and laundry",
+      "Fire rings, picnic tables, grills",
+      "Country store, 9–5",
+      "Lodge and restaurant",
+      "Swimming pool",
+      "35+ miles of trails",
+      "Cell service is spotty",
+    ],
+    mustSees: [
+      "Little River Canyon National Preserve — 15 min south",
+      "DeSoto Falls — ~100-ft falls in its own day-use area north of the campground",
+      "Indian Falls, Lost Falls, Laurel Falls and Azalea Cascade — short trails inside the park",
+      "CCC museum and Lodge",
+    ],
+    activities: ["Camping", "Hiking", "Waterfall viewing", "Swimming (pool)", "Mountain biking", "Fishing"],
+    description:
+      "The base camp for Little River Canyon: a 3,500-acre state park on Lookout Mountain 8 miles northeast of Fort Payne, 15 minutes from the Canyon Center. Wooded full-hookup sites with real showers and laundry, plus the park's own waterfalls and 35 miles of trail. Book on the Alabama State Parks site — not Recreation.gov — or call the campground desk directly.",
+    notes:
+      "Check-in 2 PM, check-out 11 AM; cancellations 72 hours before arrival. GPS directions are unreliable here — use the park's written directions to 7104 DeSoto Parkway NE, Fort Payne. Coordinates from the US Census geocoder on that address. Verified alapark.com 2026-08-16; nightly rates are genuinely not published, so call.",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    pulse: {
+      summary:
+        "Weeknights are usually open; weekends and fall-color season book out. For a same-day site, phone the campground desk rather than trusting the online calendar.",
+      crowd: "moderate",
+      lastVerified: "2026-08",
+      source: "official",
+    },
+    nearby: [
+      {
+        name: "Little River Canyon National Preserve",
+        siteId: "al-little-river-canyon",
+        minutes: 15,
+        note: "Little River Falls, Rim Parkway overlooks, canyon swim holes",
+      },
+      { name: "Little River Falls & Blue Hole", siteId: "al-little-river-falls", minutes: 15 },
+      { name: "DeSoto Falls", siteId: "al-desoto-falls", minutes: 10 },
+      { name: "Canyon Mouth Park ($15)", siteId: "al-canyon-mouth-park", minutes: 45 },
+    ],
+  },
+  {
+    id: "al-desoto-primitive",
+    name: "DeSoto State Park — Primitive Campground (walk-in tent)",
+    type: "state",
+    agency: "Alabama State Parks — DeSoto State Park",
+    landManager: "State Parks",
+    state: "AL",
+    lat: 34.4993,
+    lng: -85.6205,
+    elevation: 1700,
+    driveTimeMinutes: 184,
+    hikeInMiles: 0.1,
+    reservationRequired: true,
+    reservationUrl: "https://reserve.alapark.com/desoto",
+    officialUrl: "https://www.alapark.com/parks/desoto-state-park/primitive-campsites",
+    phone: "256-845-5075",
+    bookingWindow:
+      "Reservable, but your specific site is chosen at check-in. The two backpacking shelters are by phone or first-come.",
+    passRequired: "None to camp",
+    parkingFee: "Included — short walk in from the primitive lot; gate key issued at check-in",
+    campingFee:
+      "Rates vary by season — call 256-845-5075. Plus the $5.25 reservation fee and 4.25% resort fee per night.",
+    maxStayDays: 14,
+    amenities: [
+      "18 wooded walk-in tent sites",
+      "Fire rings",
+      "Central vault toilet and water faucet",
+      "Picnic shelter",
+      "Showers at the Improved Campground, ~1 mi away",
+      "Padlocked gate — key at check-in",
+    ],
+    mustSees: [
+      "Little River Canyon National Preserve — 15 min south",
+      "Lost Falls and Laurel Falls trails from the park",
+      "DeSoto Falls day-use area",
+    ],
+    activities: ["Tent camping", "Hiking", "Waterfall viewing"],
+    description:
+      "The quiet way to sleep at DeSoto — 18 walk-in tent sites in the woods with fire rings, a vault toilet and water, no RVs and no hookups. Same 15-minute drive to the canyon, and you can still use the showers at the improved loop. Two backpacking shelters (Never-Never Land, 0.75 mi from the Lost Falls trailhead, and CCC Quarry) if you want a true hike-in night.",
+    notes:
+      "Check in at the campground/Country Store by 2 PM for your gate key. Two-night minimum on weekends. Coordinates are approximate within the park (the primitive loop sits just west of the improved campground) — follow the park's written directions. Verified alapark.com 2026-08-16.",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "paved",
+    nearby: [
+      { name: "Little River Canyon National Preserve", siteId: "al-little-river-canyon", minutes: 15 },
+      { name: "Little River Falls & Blue Hole", siteId: "al-little-river-falls", minutes: 15 },
+      { name: "DeSoto Falls", siteId: "al-desoto-falls", minutes: 10 },
+    ],
+  },
+  {
+    id: "al-cherokee-rock-village",
+    name: "Cherokee Rock Village",
+    type: "developed",
+    agency: "Cherokee County / Southeastern Climbers Coalition — Leesburg, AL",
+    landManager: "Other",
+    state: "AL",
+    lat: 34.1804,
+    lng: -85.8268,
+    elevation: 1600,
+    hikeInMiles: 0,
+    reservationRequired: false,
+    reservationUrl: "https://www.campspot.com/book/cherokee-rock-village",
+    officialUrl: "https://www.cherokeerockvillage.com/",
+    phone: "256-523-3799",
+    bookingWindow:
+      "Brow sites and the RV area need reservations; the tent-only section and middle section are first-come, first-served.",
+    passRequired: "Day use is charged per vehicle — confirm current rates on the official site",
+    parkingFee: "Day use: about $7 per car (vans/buses more) — confirm on site",
+    campingFee: "$19/night for the first-come tent-only section; reserved brow and RV sites vary",
+    maxStayDays: 14,
+    amenities: [
+      "100+ primitive tent sites and 15 primitive RV sites (up to 40 ft)",
+      "Full bathhouse — flush toilets and ADA-accessible showers",
+      "Fire pit and picnic table at each site",
+      "Observation deck, playground, covered pavilion",
+      "Open sunrise to sunset for day use; overnight guests stay past dark",
+    ],
+    mustSees: [
+      "The boulder field and sandstone towers on the brow",
+      "Sunset over Weiss Lake from the observation deck",
+      "Bouldering and top-rope climbing routes",
+    ],
+    activities: ["Camping", "Rock climbing", "Bouldering", "Hiking", "Photography"],
+    description:
+      "A boulder field of house-sized sandstone towers on the brow of Lookout Mountain above Weiss Lake, about 40 minutes southwest of Little River Canyon. It is Alabama's best-known climbing area, and the reason it belongs on this list for a late plan: a tent-only section stays first-come, first-served at $19 a night, so you can drive up without a reservation.",
+    notes:
+      "Address 2000 County Road 70, Leesburg, AL 35983. Coordinates cross-checked between the Southeastern Climbers Coalition (34.1804, -85.8268) and the US Census geocoder on the street address — the access road is rough in spots, so follow the official directions rather than a dropped pin. Verified cherokeerockvillage.com 2026-08-17; rates can change, so confirm before you rely on them.",
+    dataSource: "curated",
+    status: "open",
+    access: "any_vehicle",
+    roadQuality: "gravel",
+    pulse: {
+      summary:
+        "Climbers fill the brow sites on weekends; the first-come tent section is the fallback when everything else is booked.",
+      crowd: "moderate",
+      roadNote: "Last stretch is rough gravel — fine for a car, slow going",
+      lastVerified: "2026-08",
+      source: "official",
+    },
+    nearby: [
+      { name: "Little River Canyon National Preserve", siteId: "al-little-river-canyon", minutes: 40 },
+      { name: "Canyon Mouth Park ($15)", siteId: "al-canyon-mouth-park", minutes: 25 },
+    ],
+  },
+];

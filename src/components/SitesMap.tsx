@@ -78,7 +78,11 @@ export function SitesMap({
               ? "#047857"
               : pin.type === "ohv"
                 ? "#c2410c"
-                : "#265c49";
+                : pin.type === "destination"
+                  ? "#be123c"
+                  : pin.type === "state"
+                    ? "#0f766e"
+                    : "#265c49";
 
         const icon = L.divIcon({
           className: "immerse-pin",
