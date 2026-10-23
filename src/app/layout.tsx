@@ -2,8 +2,15 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthNav } from "@/components/AuthNav";
 import { Telemetry } from "../lib/TelemetryProvider";
+import { JsonLd } from "@/components/JsonLd";
+import { SERVICES, SERVICE_ORDER, SITE_NAME, SITE_URL, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
+// Pages set their own title, description and canonical; this is the fallback.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "en_US" },
+  twitter: { card: "summary" },
   title: "Immerse — Find & Plan Nature Camping Trips",
   description:
     "Discover camping spots on federal and curated land. Clear info on passes, parking, hike-in, drive times, availability, itinerary templates, and YouTube adventure videos.",
@@ -27,6 +34,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        <JsonLd data={organizationJsonLd} />
+        <JsonLd data={websiteJsonLd} />
         <header className="border-b border-forest-200 bg-white/80 backdrop-blur sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <a href="/" className="flex items-center gap-2 group shrink-0">
@@ -61,6 +70,13 @@ export default function RootLayout({
         <main>{children}</main>
         <footer className="border-t border-forest-100 mt-16 py-8 text-center text-sm text-forest-600">
           <p>Built to remove the barriers between you and nature.</p>
+          <nav aria-label="What Immerse does" className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-forest-600">
+            {SERVICE_ORDER.map((k) => (
+              <a key={k} href={SERVICES[k].path} className="hover:text-forest-800 underline-offset-2 hover:underline">
+                {SERVICES[k].name}
+              </a>
+            ))}
+          </nav>
           <p className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-forest-500">
             <a href="/privacy" className="hover:text-forest-700 underline-offset-2 hover:underline">
               Privacy

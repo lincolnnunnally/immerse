@@ -13,6 +13,9 @@ import {
   EXAMPLE_HOST_PROFILE,
   TrustProfileCard,
 } from "@/components/TrustProfileCard";
+import { serviceMetadata } from "@/lib/seo";
+
+export const metadata = serviceMetadata("trust");
 
 export default function TrustPage() {
   return (

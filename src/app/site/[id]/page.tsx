@@ -12,6 +12,19 @@ import { hasValidCoords } from "@/lib/maps";
 import { TripReadyPanel } from "@/components/TripReadyPanel";
 import { reservationSystemName } from "@/lib/reservation";
 import { LandRulesPanel } from "@/components/LandRulesPanel";
+import { JsonLd } from "@/components/JsonLd";
+import { isExamplePrivate as isExamplePrivateSite, siteJsonLd, siteMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const site = await resolveSite(id);
+  return site ? siteMetadata(site) : { title: "Place not found | Immerse" };
+}
 
 function accessLabel(access?: string) {
   switch (access) {
@@ -77,6 +90,7 @@ export default async function SitePage({
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      {isExamplePrivateSite(site) ? null : <JsonLd data={siteJsonLd(site)} />}
       <Link
         href="/search"
         className="inline-flex items-center text-sm text-forest-600 hover:text-forest-800 mb-6"

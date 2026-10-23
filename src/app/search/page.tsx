@@ -4,6 +4,10 @@ import { headers } from "next/headers";
 import { SitesMap } from "@/components/SitesMap";
 import { SitePhoto } from "@/components/SitePhoto";
 import { hasValidCoords } from "@/lib/maps";
+import { JsonLd } from "@/components/JsonLd";
+import { serviceJsonLd, serviceMetadata } from "@/lib/seo";
+
+export const metadata = serviceMetadata("search");
 
 const STATES = [
   { code: "GA", label: "Georgia" },
@@ -285,6 +289,7 @@ export default async function SearchPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      <JsonLd data={serviceJsonLd("search")} />
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-forest-900 mb-2">
           {place ? `Near ${place.name}` : "Find a place to immerse"}

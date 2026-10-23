@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata("/terms", "Terms of use | Immerse", "The terms for using Immerse to discover and plan nature immersion trips, including how campground and reservation information should be used.");
 
 export default function TermsPage() {
   return (
