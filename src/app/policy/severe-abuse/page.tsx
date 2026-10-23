@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { IMMERSE_PROTECTION, SEVERE_ABUSE_POLICY } from "@/lib/trust";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata("/policy/severe-abuse", "Severe abuse policy | Immerse", "What counts as severe abuse on Immerse, what happens when it occurs, and how hosts, guests and land are protected.");
 
 export default function SevereAbusePolicyPage() {
   return (

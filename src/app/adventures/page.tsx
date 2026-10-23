@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { youtubeEmbedUrl } from "@/lib/youtube";
+import { JsonLd } from "@/components/JsonLd";
+import { serviceJsonLd, serviceMetadata } from "@/lib/seo";
+
+export const metadata = serviceMetadata("adventures");
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +36,7 @@ export default async function AdventuresPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
+      <JsonLd data={serviceJsonLd("adventures")} />
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-bold text-forest-900 mb-2">Adventures</h1>

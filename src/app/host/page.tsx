@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { PRIVATE_HOST_LIMITS } from "@/lib/types";
+import { JsonLd } from "@/components/JsonLd";
+import { serviceJsonLd, serviceMetadata } from "@/lib/seo";
+
+export const metadata = serviceMetadata("host");
 
 export default function HostPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      <JsonLd data={serviceJsonLd("host")} />
       <p className="text-sm text-forest-500 mb-2">For landowners</p>
       <h1 className="text-3xl font-bold text-forest-900 mb-3">
         Share land for immersion — not a campground
